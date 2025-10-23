@@ -1,3 +1,4 @@
+// if you dont see anything in the serial monitor try changing ports from COM3
 
 #include <WiFi.h>
 
