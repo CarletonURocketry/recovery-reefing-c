@@ -1,6 +1,6 @@
 # Setting Up Raspberry Pi Pico W with Arduino IDE
 
-**Authors:** Mahin, Niraj  
+**Authors:** Mahin Akond, Niraj Malokar 
 **Date:** 21/10/25  
 
 ---
