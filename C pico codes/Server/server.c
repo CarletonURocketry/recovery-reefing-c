@@ -9,6 +9,8 @@ WiFiServer server(port);
 int ledPins[] = {11, 12, 13};  // The three LED pins
 int numLeds = sizeof(ledPins) / sizeof(ledPins[0]);
 
+bool connected = false;
+
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -39,7 +41,11 @@ void loop() {
       if (client.available()) {
         String msg = client.readStringUntil('\n');
         Serial.printf("Received: %s\n", msg.c_str());
-        client.println("Hello from Pico AP Server!");
+        // client.println("Hello from Pico AP Server!");
+
+        connected = !connected;
+        client.println(connected ? "1\n" : "0\n");
+        delay(3000);
       }
     }
     client.stop();
