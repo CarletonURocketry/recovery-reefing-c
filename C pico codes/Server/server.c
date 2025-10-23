@@ -6,6 +6,9 @@ int port = 4242;
 
 WiFiServer server(port);
 
+int ledPins[] = {11, 12, 13};  // The three LED pins
+int numLeds = sizeof(ledPins) / sizeof(ledPins[0]);
+
 void setup() {
   Serial.begin(115200);
   delay(2000);
@@ -18,12 +21,19 @@ void setup() {
   Serial.printf("Access Point started: %s\n", ap_ssid);
   Serial.printf("AP IP address: %s\n", IP.toString().c_str());
 
+  for (int i = 0; i < numLeds; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+
   server.begin();
 }
 
 void loop() {
   WiFiClient client = server.available();
   if (client) {
+    for (int i = 0; i < numLeds; i++) {
+      digitalWrite(ledPins[i], HIGH);
+    }
     Serial.println("Client connected!");
     while (client.connected()) {
       if (client.available()) {
