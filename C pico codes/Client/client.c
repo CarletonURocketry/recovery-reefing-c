@@ -1,54 +1,122 @@
-// if you dont see anything in the serial monitor try changing ports from COM3
+// Author: Niraj Malokar
+// Author: Mahin Akond
 
 #include <WiFi.h>
 
+// These are our current example Wi-Fi credentials
 const char* ssid = "PicoServer";
 const char* password = "12345678";
-const char* serverIP = "192.168.42.1";  // default IP for SoftAP
+const char* serverIP = "192.168.42.1";
 int port = 4242;
 
+// Sets up our client variables
 WiFiClient client;
+unsigned long lastMessageTime = 0;
+bool wasConnected = false;
 
 void setup() {
+  // This is our baud rate for Serial Monitor
   Serial.begin(115200);
   delay(2000);
 
-  pinMode(LED_BUILTIN, OUTPUT); // pico built-in LED
+  // Initialize LED pin as OUTPUT pin, and turn it off initially
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  Serial.printf("Connecting to AP: %s\n", ssid);
-  while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(2000);                      // wait for a second
-    Serial.print(".");
-  }
-  Serial.println("\nConnected!");
-
-  if (client.connect(serverIP, port)) {
-    digitalWrite(LED_BUILTIN, LOW);
-    Serial.println("Connected to server!");
-    client.println("Hello from Pico Client!");
-  } else {
-    Serial.println("Failed to connect to server");
-    Serial.println("Retrying to connect...");    
-    WiFi.begin(ssid, password);
-  }
+  // Call our functions to connect to Wi-Fi and server
+  Serial.println("Starting client...");
+  connectToWiFi();
+  connectToServer();
 }
 
 void loop() {
-  if (client.available()) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    String msg = client.readStringUntil('\n');
-    Serial.printf("Server says: %s\n", msg.c_str());
+  // Read messages from server if connected
+  if (client.connected()) {
+    if (client.available()) {
+      // Read the message from the server and print them to serial monitor
+      String msg = client.readStringUntil('\n');
+      msg.trim();
+      Serial.printf("Server says: %s\n", msg.c_str());
 
-    // if (*msg.c_str() == '1') {
-    //   digitalWrite(LED_BUILTIN, HIGH);
-    // } else {
-    //   digitalWrite(LED_BUILTIN, LOW);
-    // }
-    
+      // Reset timer when we receive any message
+      lastMessageTime = millis();
+
+      // Control built-in LED based on server message
+      if (msg == "1") {
+        digitalWrite(LED_BUILTIN, HIGH);
+      } else if (msg == "0") {
+        digitalWrite(LED_BUILTIN, LOW);
+      }
+    }
+
+    // Simple check: if no messages for 10 seconds, assume that we are disconnected from server and stop connection
+    if (millis() - lastMessageTime > 10000) {
+      Serial.println("No messages for 10 seconds - assuming disconnected");
+      client.stop();
+      wasConnected = false;
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+  } 
+  else {
+    // Not connected - try to reconnect every 15 seconds (This could be less time maybe?)
+    if (millis() - lastMessageTime > 15000) {
+      Serial.println("Attempting to reconnect...");
+      
+      // Check WiFi first
+      if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Reconnecting WiFi...");
+        WiFi.begin(ssid, password);
+        delay(2000);
+      }
+      
+      // Try to connect to server
+      if (client.connect(serverIP, port)) {
+        Serial.println("Reconnected to server!");
+        client.println("Hello from Pico Client!");
+        lastMessageTime = millis();
+        wasConnected = true;
+      } else {
+        Serial.println("Failed to reconnect");
+        lastMessageTime = millis(); // Reset timer to try again in 15 seconds
+      }
+    }
   }
-  delay(1000);
+
+  delay(100);
+}
+
+// Function to connect to Wi-Fi
+void connectToWiFi() {
+  // Set Wi-Fi to station mode and attempt connection
+  Serial.printf("Connecting to Wi-Fi: %s\n", ssid);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  // Wait for connection with timeout
+  for(int i = 0; i < 20; i++) {
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\nWi-Fi connected!");
+      Serial.printf("Client IP: %s\n", WiFi.localIP().toString().c_str());
+      return;
+    }
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nWi-Fi connection failed!");
+}
+
+// Function to connect to TCP server
+void connectToServer() {
+  Serial.printf("Connecting to server %s:%d\n", serverIP, port);
+  
+  // Try to connect to server
+  if (client.connect(serverIP, port)) {
+    Serial.println("Connected to server!");
+    client.println("Hello from Pico Client!");
+    lastMessageTime = millis();
+    wasConnected = true;
+  } else {
+    Serial.println("Failed to connect to server");
+    lastMessageTime = millis(); // Start reconnection attempts
+  }
 }
