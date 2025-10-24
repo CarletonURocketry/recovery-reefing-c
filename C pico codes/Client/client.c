@@ -21,11 +21,8 @@ void setup() {
   Serial.printf("Connecting to AP: %s\n", ssid);
   while (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(1000);                      // wait for a second
-    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-    delay(1000);
+    delay(2000);                      // wait for a second
     Serial.print(".");
-    delay(500);
   }
   Serial.println("\nConnected!");
 
@@ -35,6 +32,8 @@ void setup() {
     client.println("Hello from Pico Client!");
   } else {
     Serial.println("Failed to connect to server");
+    Serial.println("Retrying to connect...");    
+    WiFi.begin(ssid, password);
   }
 }
 
@@ -43,6 +42,13 @@ void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
     String msg = client.readStringUntil('\n');
     Serial.printf("Server says: %s\n", msg.c_str());
+
+    // if (*msg.c_str() == '1') {
+    //   digitalWrite(LED_BUILTIN, HIGH);
+    // } else {
+    //   digitalWrite(LED_BUILTIN, LOW);
+    // }
+    
   }
   delay(1000);
 }
