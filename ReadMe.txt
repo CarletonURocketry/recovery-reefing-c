@@ -20,12 +20,22 @@ Azan Huggins Goolamalle (10/01/26)
 1. Install Vscode (https://code.visualstudio.com/download)
 2. Install the Raspberry Pico W Windows installer (https://www.raspberrypi.com/news/raspberry-pi-pico-windows-installer/)
 3. Download RPI extension in Vscode. Do this by going to your "Extensions" tab in Vscode and typing in Raspberry Pi Pico
-4. For testing, create new project from example by clicking on the raspberry pico in your left dropdown menu. Specifically choose "blink.c"
-5. Test by plugging in your pico in bootsel mode, then compiling and running project, do not use debug
+4. Download CMake (https://cmake.org/download/) again. Do this. Don't question it.
+5. Download this (https://www.raspberrypi.com/news/raspberry-pi-pico-windows-installer/#:~:text=Download%20Windows%20Pico%20Installer) from the link. 
+Run the installer twice once it is downloaded. It will take a while, but do it twice. This is important.
+6. Download Zadig (https://zadig.akeo.ie/). Install it.
+7. Plug in the pico w in bootsel mode.
+8. Open Zadig
+9. Go to options -> list all devices
+10. Find RPI port -> install/reinstall drivers
+11. Open VS Code.
+12. For testing, create new project from example by clicking on the raspberry pico in your left dropdown menu -> New Project from Example
+13. Name -> blink, Board Type -> pico w (also enable 'CMake-Tools extension integration' if not enabled)
+14. Click create, the first time you do this, it downloads more tools, this may take a while.
+15. 
+7. Test by plugging in your pico in bootsel mode, then compiling and running project, do not use debug
 
 Common Troubleshooting
 - Incorrect Drivers 
-  1) Download Zadig
-  2) Go to options -> List all Devices
-  3) Find RPI port -> install/reinstall drivers
-  4) Go to the RPI icon in the leftmost dropdown menu and hit "clean cmake". this will (hopefully) change directories to where the libraries actually are on your computer
+  1) Reinstall Zadig drivers on the pico
+  5) In VS Code, go to the RPI icon in the leftmost dropdown menu and hit "clean cmake". this will (hopefully) change directories to where the libraries actually are on your computer
