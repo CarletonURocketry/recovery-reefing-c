@@ -148,6 +148,6 @@ int main() {
         // Just so we don't use 100% CPU (for now?)
         sleep_ms(100);
     }
-    
+    cyw43_arch_deinit(); //cleans up 
     return 0;
 }
