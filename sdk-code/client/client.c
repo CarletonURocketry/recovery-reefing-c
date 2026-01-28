@@ -68,8 +68,10 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_
 
 int main() {
     stdio_init_all();
-    sleep_ms(3000); // Wait for USB serial
-    
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
+    }
+        
     printf("\n=== ROCKET UDP CLIENT ===\n");
     
     // Initialize WiFi
@@ -86,7 +88,7 @@ int main() {
     // Connects to AP, 30s timeout because establishing connection might take a little bit, 
     // We will find out more during testing
     if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-        printf("WiFi connection failed\n");
+        printf("WiFi connection failed test\n");
         return -1;
     }
     
