@@ -4,7 +4,50 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+
 #include "lwip/udp.h"
+#include "lwip/netif.h"
+#include "lwip/ip_addr.h"
+#include "lwip/ip4_addr.h"
+
+
+// Function to configure static IP for AP
+bool configure_ap_ip(const char *ip, const char *netmask, const char *gateway) {
+    // For threadsafe_background, we need to get the netif through the async context
+    struct netif *ap_if = NULL;
+    
+    // Find the AP interface by iterating through network interfaces
+    for (struct netif *netif = netif_list; netif != NULL; netif = netif->next) {
+        // Check if this is the AP interface (it will be up after we enable AP mode)
+        if (netif_is_up(netif)) {
+            ap_if = netif;
+            break;
+        }
+    }
+    if (!ap_if) {
+        printf("Failed to get AP interface\n");
+        return false;
+    }
+
+    ip4_addr_t ipaddr, nm, gw;
+    
+    // Convert string IPs to ip4_addr_t structures
+    if (!ip4addr_aton(ip, &ipaddr) ||
+        !ip4addr_aton(netmask, &nm) ||
+        !ip4addr_aton(gateway, &gw)) {
+        printf("Invalid IP address format\n");
+        return false;
+    }
+    
+    // Set the IP address, netmask, and gateway
+    netif_set_addr(ap_if, &ipaddr, &nm, &gw);
+    
+    printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
+    printf("Netmask: %s\n", ip4addr_ntoa(&nm));
+    printf("Gateway: %s\n", ip4addr_ntoa(&gw));
+    
+    return true;
+}
 
 // WiFi credentials
 #define WIFI_SSID "ROCKET_AP"
@@ -56,6 +99,8 @@ void send_state_packet(rocket_state_t state) {
     }
 }
 
+
+
 // The server gets a callback when a packet is received, this is how it knows the IP of the client and where to send packets
 // arg: user argument (not used here)
 // pcb: the UDP socket that received the packet
@@ -98,6 +143,14 @@ int main() {
     // Start AP mode with our credentials
     cyw43_arch_enable_ap_mode(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK);
     
+    // IMPORTANT: Give the AP interface time to initialize
+    sleep_ms(1000);
+
+     if (!configure_ap_ip("192.168.4.1", "255.255.255.0", "192.168.4.1")) {
+        printf("Failed to configure AP IP\n");
+        return -1;
+    }
+
     printf("AP Started: %s\n", WIFI_SSID);
     printf("IP: 192.168.4.1\n");
     
