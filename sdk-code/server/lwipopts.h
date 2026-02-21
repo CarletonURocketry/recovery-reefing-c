@@ -19,6 +19,8 @@
 #define LWIP_IPV6                      0
 #define IP_REASSEMBLY                  0
 #define IP_FRAG                        0
+#define LWIP_NETIF_API                 0
+
 
 /* UDP */
 #define LWIP_UDP                       1

@@ -91,7 +91,33 @@ int main() {
         printf("WiFi connection failed test\n");
         return -1;
     }
-    
+    sleep_ms(100);
+    /* after connect + sleep */
+
+    struct netif *sta_if = NULL;
+
+    for (struct netif *n = netif_list; n; n = n->next) {
+        if (netif_is_up(n)) {
+            sta_if = n;
+            break;
+        }
+    }
+
+    if (!sta_if) {
+        printf("No STA netif\n");
+        return -1;
+    }
+
+
+    // set static IP
+    ip4_addr_t ip, nm, gw;
+    ip4addr_aton("192.168.4.2", &ip);
+    ip4addr_aton("255.255.255.0", &nm);
+    ip4addr_aton("192.168.4.1", &gw);
+
+    netif_set_addr(sta_if, &ip, &nm, &gw);
+
+
     printf("Connected!\n");
     // Prints assigned IP
     printf("Client IP: %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
