@@ -1,9 +1,6 @@
 ---
 updated: 2026-03-10 19:49:53Z
 created: 2026-03-06 21:41:37Z
-latitude: 45.42152960
-longitude: -75.69719310
-altitude: 0.0000
 ---
 
 &nbsp;
