@@ -40,6 +40,31 @@ void pico_set_led(bool led_on) {
 #endif
 }
 
+void writeToCsv(char str[], lfs_t lfs, lfs_file_t file){
+    // read current count
+    uint32_t boot_count = 0;
+    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT);
+
+    // update boot count
+    lfs_file_write(&lfs, &file, &str, sizeof(str));
+
+    // remember the storage is not updated until the file is closed successfully
+    lfs_file_close(&lfs, &file);
+}
+
+void ReadCSV(lfs_t lfs, lfs_file_t file){
+    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT);
+    lfs_size_t fileSize = lfs_file_size(&lfs, &file); // ensure we have the right filesize for buffer
+    char read[] = ""; // empty string to put read info in
+
+    int *buffer = malloc(fileSize+1);
+
+    lfs_file_read(&lfs, &file, &read, sizeof(buffer));
+    printf("%s\n", read);
+
+    lfs_file_close(&lfs, &file);
+}
+
 int main()
 {
     stdio_init_all();
@@ -67,39 +92,17 @@ int main()
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
     }
-
-    //open file + fail check
-    /*err = lfs_file_open(&lfs, &file, "makefile.csv", LFS_O_RDWR | LFS_O_CREAT);
-    printf("file opened\n");
-    if (!err){
-        printf("Error opening file to write\n");
-    }
-
-    //Read file (See if csv saved)
-    lfs_file_read(&lfs, &file, "makefile.csv", sizeof(32));
-
-    //Write to file
-    lfs_file_write(&lfs, &file, "This is a test", sizeof(32));
-    printf("written to file\n");
-
-    lfs_file_close(&lfs, &file);
-    printf("file closed\n");
-
-    //close file
-    lfs_file_close(&lfs, &file);
-    printf("file closed\n");
-
-    lfs_unmount(&lfs); */
-
+    char hello[] = "Hello there, how are you doing?";
+    char bye[] ="";
     // read current count
     uint32_t boot_count = 0;
-    lfs_file_open(&lfs, &file, "boot_count.csv", LFS_O_RDWR | LFS_O_CREAT);
-    lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
+    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT); // can go in the inital setup of the pico
+    lfs_file_read(&lfs, &file, &bye, sizeof(hello));  //library, file reading from, write to, size
 
     // update boot count
     boot_count += 1;
-    lfs_file_rewind(&lfs, &file);
-    lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+    lfs_file_rewind(&lfs, &file); // not necessary for our purpose
+    lfs_file_write(&lfs, &file, &hello, sizeof(hello)); // library, file writing to, what is being added, size
 
     // remember the storage is not updated until the file is closed successfully
     lfs_file_close(&lfs, &file);
@@ -108,7 +111,7 @@ int main()
     lfs_unmount(&lfs);
 
     // print the boot count
-    printf("boot_count: %d\n", boot_count);
+    printf("boot_count: %s\n", bye);
 
     int rc = pico_led_init();
     hard_assert(rc == PICO_OK);
