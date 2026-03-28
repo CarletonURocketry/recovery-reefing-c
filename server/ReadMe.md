@@ -3,6 +3,14 @@ updated: 2026-03-10 19:49:53Z
 created: 2026-03-06 21:41:37Z
 ---
 
+# Compilation commands
+
+```
+rm -rf build
+cmake -S . -B build -G Ninja
+cmake --build build
+```
+
 &nbsp;
 
 * * *
