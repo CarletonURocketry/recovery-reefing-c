@@ -17,13 +17,15 @@
 #define CLIENT_NM     "255.255.255.0"
 #define CLIENT_GW     "192.168.4.1"
 
-// Wait up to 3s for USB serial — then boot anyway (no USB in flight)
-#define USB_WAIT_MS          3000
+#define USB_WAIT_MS           3000
 #define WIFI_ASSOC_TIMEOUT_MS 30000
 
-// How often to retry HELLO, and how many times before giving up
 #define HELLO_RETRY_INTERVAL_MS 1000
-#define HELLO_MAX_RETRIES       30
+#define HELLO_MAX_RETRIES       40
+
+#define PACKET_TIMEOUT_MS 5000
+
+volatile uint32_t last_packet_time_ms = 0;
 
 typedef enum {
     STATE_NOTHING_DEPLOYED = 0,
@@ -32,12 +34,14 @@ typedef enum {
 } rocket_state_t;
 
 rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
-bool server_acked = false;  // Set true when server replies with ACK
+bool server_acked = false;
 
-// UDP receive callback
+struct udp_pcb *udp_client = NULL;
+
 void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
                        const ip_addr_t *addr, u16_t port) {
     if (p == NULL) return;
+    last_packet_time_ms = to_ms_since_boot(get_absolute_time());
 
     char buffer[128];
     u16_t copy_len = p->len < sizeof(buffer) - 1 ? p->len : sizeof(buffer) - 1;
@@ -47,7 +51,6 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 
     printf("Received: %s\n", buffer);
 
-    // Server ACK to our HELLO -- handshake complete
     if (strncmp(buffer, "ACK", 3) == 0) {
         if (!server_acked) {
             server_acked = true;
@@ -56,7 +59,6 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
         return;
     }
 
-    // State packet from server
     int state;
     if (sscanf(buffer, "STATE:%d", &state) != 1) return;
 
@@ -67,12 +69,10 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
             printf("  -> Nothing deployed\n");
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
             break;
-
         case STATE_MAIN_DEPLOYED:
             printf("  -> Main parachute deployed!\n");
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
             break;
-
         case STATE_CUT_REEFING:
             printf("  -> CUT REEFING LINE!!!\n");
             for (int i = 0; i < 10; i++) {
@@ -85,31 +85,13 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     }
 }
 
-
-int main() {
-    stdio_init_all();
-
-    // Waits for USB serial connection before proceeding, will need to change before in flight
-    while (!stdio_usb_connected()) {
-        sleep_ms(100);
-    }
-        
-    printf("\n=== ROCKET UDP CLIENT ===\n");
-
-    // Initialize WiFi (must be before any lwIP calls)
+static bool wifi_init_and_connect() {
     if (cyw43_arch_init()) {
         printf("WiFi init failed\n");
-        return -1;
+        return false;
     }
 
-    // Enable STA mode and start connecting to AP
     cyw43_arch_enable_sta_mode();
-    printf("Connecting to AP: %s\n", WIFI_SSID);
-
-    // Connect async and wait for layer-2 association only (CYW43_LINK_JOIN).
-    // cyw43_arch_wifi_connect_timeout_ms waits for LINK_UP which requires
-    // DHCP. The AP has no DHCP server so that would always time out.
-    // Async connection, does not block -- we will poll for completion below. This allows the program to remain responsive and handle timeouts properly.
     cyw43_arch_wifi_connect_async(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK);
 
     absolute_time_t deadline = make_timeout_time_ms(WIFI_ASSOC_TIMEOUT_MS);
@@ -126,89 +108,143 @@ int main() {
             if      (link_status == CYW43_LINK_BADAUTH) printf(" (bad password)\n");
             else if (link_status == CYW43_LINK_NONET)   printf(" (AP not found)\n");
             else printf("\n");
-            return -1;
+            return false;
         }
         sleep_ms(100);
     }
 
     if (link_status != CYW43_LINK_JOIN && link_status != CYW43_LINK_UP) {
         printf("WiFi association timed out\n");
-        return -1;
+        return false;
     }
 
     printf("Associated with AP!\n");
 
-    // Set static IP directly on the STA netif -- no netif_list search.
-    // dhcp_stop() prevents the DHCP client from later overwriting our IP.
     struct netif *sta_if = &cyw43_state.netif[CYW43_ITF_STA];
-
-    // Could also change lwipopts.h to disable DHCP client entirely (LWIP_DHCP=0) since we won't be using it for anything
     dhcp_stop(sta_if);
-
-    // Set static IP, netmask, gateway
     ip4_addr_t ip, nm, gw;
     ip4addr_aton(CLIENT_IP, &ip);
     ip4addr_aton(CLIENT_NM, &nm);
     ip4addr_aton(CLIENT_GW, &gw);
     netif_set_addr(sta_if, &ip, &nm, &gw);
+    netif_set_up(sta_if);
+    printf("Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
 
-    printf("Static IP set: %s\n", ip4addr_ntoa(&ip));
+    return true;
+}
 
-    // Create and bind UDP socket
-    struct udp_pcb *udp_client = udp_new();
+static bool setup_udp() {
+    if (udp_client != NULL) {
+        udp_remove(udp_client);
+        udp_client = NULL;
+    }
+
+    udp_client = udp_new();
     if (udp_client == NULL) {
         printf("Failed to create UDP socket\n");
-        return -1;
+        return false;
     }
 
     err_t err = udp_bind(udp_client, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
         printf("UDP bind failed: %d\n", err);
-        return -1;
+        udp_remove(udp_client);
+        udp_client = NULL;
+        return false;
     }
 
     udp_recv(udp_client, udp_recv_callback, NULL);
+    printf("UDP socket ready on port %d\n", UDP_PORT);
+    return true;
+}
 
-    printf("UDP client ready on port %d\n", UDP_PORT);
-    printf("Listening for packets...\n\n");
-
-    // Send HELLO repeatedly until server ACKs.
+static void do_hello_handshake() {
+    server_acked = false;
     ip_addr_t server_addr;
     ip4addr_aton(SERVER_IP, &server_addr);
-
     const char *hello = "HELLO_FROM_CLIENT";
     uint32_t last_hello_time = 0;
-    int hello_attempts = 0;
+    int attempts = 0;
 
-    // Interval can be a lot quicker, current one is for testing
     printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
 
-    while (!server_acked && hello_attempts < HELLO_MAX_RETRIES) {
+    while (!server_acked && attempts < HELLO_MAX_RETRIES) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
-
         if (now - last_hello_time >= (uint32_t)HELLO_RETRY_INTERVAL_MS) {
             struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, strlen(hello), PBUF_RAM);
             if (p != NULL) {
                 memcpy(p->payload, hello, strlen(hello));
                 udp_sendto(udp_client, p, &server_addr, UDP_PORT);
                 pbuf_free(p);
-                printf("HELLO attempt %d/%d\n", ++hello_attempts, HELLO_MAX_RETRIES);
+                printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
             }
             last_hello_time = now;
         }
-
         cyw43_arch_poll();
         sleep_ms(10);
     }
 
     if (!server_acked) {
-        printf("Server did not respond after %d attempts\n", HELLO_MAX_RETRIES);
-        // Continue anyway -- server may still be sending state packets
+        printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+    }
+}
+
+int main() {
+    stdio_init_all();
+
+    while (!stdio_usb_connected()) {
+        sleep_ms(100);
     }
 
-    // Main loop -- lwIP callbacks fire from cyw43_arch_poll()
+    printf("\n=== ROCKET UDP CLIENT ===\n");
+
+    if (!wifi_init_and_connect()) {
+        printf("Initial WiFi connect failed\n");
+        return -1;
+    }
+
+    if (!setup_udp()) {
+        printf("Initial UDP setup failed\n");
+        return -1;
+    }
+
+    do_hello_handshake();
+
+    last_packet_time_ms = to_ms_since_boot(get_absolute_time());
+
+    // Main loop
     while (true) {
         cyw43_arch_poll();
+        uint32_t now = to_ms_since_boot(get_absolute_time());
+
+        if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
+            printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+
+            cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+            sleep_ms(500);
+            cyw43_arch_deinit();
+            sleep_ms(500);
+
+            if (!wifi_init_and_connect()) {
+                printf("Reconnect failed, will retry next watchdog tick\n");
+                last_packet_time_ms = to_ms_since_boot(get_absolute_time());
+                sleep_ms(10);
+                continue;
+            }
+
+            if (!setup_udp()) {
+                printf("UDP setup failed, will retry next watchdog tick\n");
+                last_packet_time_ms = to_ms_since_boot(get_absolute_time());
+                sleep_ms(10);
+                continue;
+            }
+
+            do_hello_handshake();
+
+            printf("Fully reconnected, resuming...\n");
+            last_packet_time_ms = to_ms_since_boot(get_absolute_time());
+        }
+
         sleep_ms(10);
     }
 
