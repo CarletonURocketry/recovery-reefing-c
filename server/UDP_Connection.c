@@ -159,6 +159,8 @@ int main() {
     while (true) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
 
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, client_connected ? 1 : 0);
+
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
             send_state_packet(current_state);
