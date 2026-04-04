@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "pico/stdlib.h"
 #include "pico/time.h"
 #include "pico_lfs.h"
@@ -40,29 +41,29 @@ void pico_set_led(bool led_on) {
 #endif
 }
 
-void writeToCsv(char str[], lfs_t lfs, lfs_file_t file){
-    // read current count
-    uint32_t boot_count = 0;
-    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT);
+void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
+    printf("%d\n", strlen(str));
+    lfs_file_open(lfs, file, "boot_count", LFS_O_WRONLY | LFS_O_CREAT); 
+    lfs_file_write(lfs, file, str, strlen(str)); // Write to system
+    lfs_file_close(lfs, file);
+    return;
+} 
 
-    // update boot count
-    lfs_file_write(&lfs, &file, &str, sizeof(str));
+void ReadCSV(lfs_t *lfs, lfs_file_t *file){
 
-    // remember the storage is not updated until the file is closed successfully
-    lfs_file_close(&lfs, &file);
+    char read_text[5000] ="";
+    lfs_file_open(lfs, file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
+    lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
+    lfs_file_close(lfs, file);
+
+    printf("%s\n", read_text);
+    return;
 }
 
-void ReadCSV(lfs_t lfs, lfs_file_t file){
-    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT);
-    lfs_size_t fileSize = lfs_file_size(&lfs, &file); // ensure we have the right filesize for buffer
-    char read[] = ""; // empty string to put read info in
-
-    int *buffer = malloc(fileSize+1);
-
-    lfs_file_read(&lfs, &file, &read, sizeof(buffer));
-    printf("%s\n", read);
-
-    lfs_file_close(&lfs, &file);
+void reset_csv(lfs_t *lfs, lfs_file_t *file){
+    lfs_file_open(lfs, file, "boot_count", LFS_O_TRUNC); 
+    lfs_file_close(lfs, file); 
+    return;  
 }
 
 int main()
@@ -75,9 +76,9 @@ int main()
     lfs_file_t file; 
 
     //establish timer
-    uint32_t start, stop, sometime; 
+    // uint32_t start, stop, sometime; 
 
-    char line_buffer[128];
+    // char line_buffer[128];
 
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
@@ -92,26 +93,29 @@ int main()
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
     }
-    char hello[] = "Hello there, how are you doing?";
+    
+    char hello[] = "lets switch it up a bit\n";
     char bye[] ="";
     // read current count
     uint32_t boot_count = 0;
-    lfs_file_open(&lfs, &file, "make.csv", LFS_O_RDWR | LFS_O_CREAT); // can go in the inital setup of the pico
-    lfs_file_read(&lfs, &file, &bye, sizeof(hello));  //library, file reading from, write to, size
+    
 
-    // update boot count
-    boot_count += 1;
-    lfs_file_rewind(&lfs, &file); // not necessary for our purpose
-    lfs_file_write(&lfs, &file, &hello, sizeof(hello)); // library, file writing to, what is being added, size
+    //lfs_file_open(&lfs, &file, "boot_count", LFS_O_WRONLY | LFS_O_CREAT); 
+    // lfs_file_write(&lfs, &file, &hello, sizeof(hello)); // Write to system
+    // lfs_file_close(&lfs, &file);
 
-    // remember the storage is not updated until the file is closed successfully
-    lfs_file_close(&lfs, &file);
+    // lfs_file_rewind(&lfs, &file);
+    //lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
+    //lfs_file_read(&lfs, &file, &bye, 8000); 
+    //lfs_file_close(&lfs, &file);
+    reset_csv(&lfs, &file);
+    sleep_ms(50);
+    write_to_CSV("This is the written test", &lfs, &file);
+    sleep_ms(50);
+    ReadCSV(&lfs, &file);
 
     // release any resources we were using
     lfs_unmount(&lfs);
-
-    // print the boot count
-    printf("boot_count: %s\n", bye);
 
     int rc = pico_led_init();
     hard_assert(rc == PICO_OK);
