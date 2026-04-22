@@ -3,11 +3,11 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
-#include "pico_lfs.h"
 #include "lwip/udp.h"
 #include "lwip/netif.h"
 #include "lwip/ip4_addr.h"
 #include "lwip/dhcp.h"
+
 
 #define WIFI_SSID     "ROCKET_AP"
 #define WIFI_PASSWORD "rocket123"
@@ -22,11 +22,12 @@
 #define WIFI_ASSOC_TIMEOUT_MS 30000
 
 #define HELLO_RETRY_INTERVAL_MS 1000
-#define HELLO_MAX_RETRIES       40
+#define HELLO_MAX_RETRIES       15
 
 #define PACKET_TIMEOUT_MS 5000
 
 volatile uint32_t last_packet_time_ms = 0;
+
 
 typedef enum {
     STATE_NOTHING_DEPLOYED = 0,
@@ -38,33 +39,6 @@ rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
 bool server_acked = false;
 
 struct udp_pcb *udp_client = NULL;
-
-// Write to CSV file we are using for documentation
-void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
-    printf("%d\n", strlen(str));
-    lfs_file_open(lfs, file, "boot_count", LFS_O_WRONLY | LFS_O_CREAT); 
-    lfs_file_write(lfs, file, str, strlen(str)); // Write to system
-    lfs_file_close(lfs, file);
-    return;
-} 
-
-// Read from CSV file we are using for documentation
-void read_CSV(lfs_t *lfs, lfs_file_t *file){
-    char read_text[5000] ="";
-    lfs_file_open(lfs, file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
-    lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
-    lfs_file_close(lfs, file);
-
-    printf("%s\n", read_text);
-    return;
-}
-
-// Reset CSV file to ensure that every test has a clean slate
-void reset_csv(lfs_t *lfs, lfs_file_t *file){
-    lfs_file_open(lfs, file, "boot_count", LFS_O_TRUNC); 
-    lfs_file_close(lfs, file); 
-    return;  
-}
 
 void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
                        const ip_addr_t *addr, u16_t port) {
@@ -99,16 +73,10 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
             break;
         case STATE_MAIN_DEPLOYED:
             printf("  -> Main parachute deployed!\n");
-            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
             break;
         case STATE_CUT_REEFING:
             printf("  -> CUT REEFING LINE!!!\n");
-            for (int i = 0; i < 10; i++) {
                 cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-                sleep_ms(50);
-                cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-                sleep_ms(50);
-            }
             break;
     }
 }
@@ -220,27 +188,7 @@ static void do_hello_handshake() {
 int main() {
     stdio_init_all();
 
-    while (!stdio_usb_connected()) {
-        sleep_ms(100);
-    } 
-    
-    //declaration of FS + initialize file
-    lfs_t lfs;
-    lfs_file_t file; 
 
-    //config
-    config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
-    if(!config){
-        printf("Out of memory\n");
-    }
-
-    //mount 
-    int err = lfs_mount(&lfs, config); 
-    if(err != LFS_ERR_OK){
-        printf("err did not work\n");
-        lfs_format(&lfs, config);
-        lfs_mount(&lfs, config);
-    }
 
     printf("\n=== ROCKET UDP CLIENT ===\n");
 
@@ -262,6 +210,7 @@ int main() {
     while (true) {
         cyw43_arch_poll();
         uint32_t now = to_ms_since_boot(get_absolute_time());
+
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
@@ -293,6 +242,7 @@ int main() {
 
         sleep_ms(10);
     }
-    
+
     return 0;
 }
+

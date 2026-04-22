@@ -13,6 +13,13 @@
 #define MEMP_NUM_UDP_PCB               6
 #define PBUF_POOL_SIZE                 24
 #define PBUF_POOL_BUFSIZE              1700
+ /* MEMORY TESING */
+#define LWIP_STATS         1
+#define MEMP_STATS         1
+#define MEM_STATS          1
+#define SYS_STATS          1
+#define LINK_STATS         1
+#define LWIP_STATS_DISPLAY 1
 
 /* IP options */
 #define LWIP_IPV4                      1

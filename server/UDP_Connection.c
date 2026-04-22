@@ -129,7 +129,7 @@ int main() {
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
-
+/*
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
     if(!config){
@@ -143,7 +143,7 @@ int main() {
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
     }
-
+*/
     printf("\n--UDP SERVER--\n");
 
     // Initialize WiFi
