@@ -1,6 +1,7 @@
 // CLIENT (Secondary Pico) - Receives UDP packets
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "pico_lfs.h"
@@ -25,8 +26,12 @@
 #define HELLO_MAX_RETRIES       40
 
 #define PACKET_TIMEOUT_MS 5000
+#define FS_SIZE (256 * 1024)
 
 volatile uint32_t last_packet_time_ms = 0;
+static struct lfs_config * config;
+static lfs_t lfs;
+struct mallinfo m = mallinfo();
 
 typedef enum {
     STATE_NOTHING_DEPLOYED = 0,
@@ -42,7 +47,7 @@ struct udp_pcb *udp_client = NULL;
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
     printf("%d\n", strlen(str));
-    lfs_file_open(lfs, file, "boot_count", LFS_O_WRONLY | LFS_O_CREAT); 
+    lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
     return;
@@ -51,7 +56,7 @@ void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
 // Read from CSV file we are using for documentation
 void read_CSV(lfs_t *lfs, lfs_file_t *file){
     char read_text[5000] ="";
-    lfs_file_open(lfs, file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
+    lfs_file_open(lfs, file, "client.csv", LFS_O_RDONLY | LFS_O_CREAT); 
     lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
     lfs_file_close(lfs, file);
 
@@ -61,7 +66,7 @@ void read_CSV(lfs_t *lfs, lfs_file_t *file){
 
 // Reset CSV file to ensure that every test has a clean slate
 void reset_csv(lfs_t *lfs, lfs_file_t *file){
-    lfs_file_open(lfs, file, "boot_count", LFS_O_TRUNC); 
+    lfs_file_open(lfs, file, "client.csv", LFS_O_TRUNC); 
     lfs_file_close(lfs, file); 
     return;  
 }
@@ -235,9 +240,9 @@ int main() {
     }
 
     //mount 
-    int err = lfs_mount(&lfs, config); 
-    if(err != LFS_ERR_OK){
-        printf("err did not work\n");
+    int error = lfs_mount(&lfs, config); 
+    if(error != LFS_ERR_OK){
+        printf("error, did not work\n");
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
     }
@@ -262,6 +267,11 @@ int main() {
     while (true) {
         cyw43_arch_poll();
         uint32_t now = to_ms_since_boot(get_absolute_time());
+
+        config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
+        if(!config){
+            printf("Out of memory\n");
+    }
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
@@ -293,6 +303,8 @@ int main() {
 
         sleep_ms(10);
     }
+    cyw43_arch_deinit();
+    lfs_unmount(&lfs);
     
     return 0;
 }
