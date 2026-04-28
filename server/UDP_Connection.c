@@ -144,7 +144,9 @@ int main() {
         lfs_mount(&lfs, config);
     }
 
-    printf("\n--UDP SERVER--\n");
+    printf("\n--UDP SERVER--\n"); 
+
+    reset_csv(&lfs, &file);
 
     // Initialize WiFi
     if (cyw43_arch_init()) {

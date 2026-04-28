@@ -31,7 +31,7 @@
 volatile uint32_t last_packet_time_ms = 0;
 static struct lfs_config * config;
 static lfs_t lfs;
-struct mallinfo m = mallinfo();
+//struct mallinfo m = mallinfo();
 
 typedef enum {
     STATE_NOTHING_DEPLOYED = 0,
@@ -46,8 +46,8 @@ struct udp_pcb *udp_client = NULL;
 
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
-    printf("%d\n", strlen(str));
-    lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT); 
+    printf("written: %s\n", str);
+    lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
     return;
@@ -248,6 +248,12 @@ int main() {
     }
 
     printf("\n=== ROCKET UDP CLIENT ===\n");
+    reset_csv(&lfs, &file);
+    
+    write_to_CSV("Test no. 1\n", &lfs, &file);
+    write_to_CSV("Test no. 2\n", &lfs, &file);
+    write_to_CSV("Test no. 3]+++\n", &lfs, &file);
+    write_to_CSV("Test no. 4 asdjfkajdskfj;klajsdjfkl;asdjfkl;adjfklajlk;sdflkajksdjfajksdf;asdjf\n", &lfs, &file);
 
     if (!wifi_init_and_connect()) {
         printf("Initial WiFi connect failed\n");
