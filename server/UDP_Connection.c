@@ -26,34 +26,28 @@ typedef enum {
     STATE_CUT_REEFING      = 2
 } rocket_state_t;
 
+#define FS_SIZE (256 * 1024)
+
 // Global UDP control block (PCB = Protocol Control Block, lwIP's internal socket structure)
 struct udp_pcb *udp_sender;
 ip_addr_t client_ip;
 bool client_connected = false;
 
+static struct lfs_config * config;
+static lfs_t lfs;
+
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
-    printf("%d\n", strlen(str));
-    lfs_file_open(lfs, file, "boot_count", LFS_O_WRONLY | LFS_O_CREAT); 
+    printf("written: %s\n", str);
+    lfs_file_open(lfs, file, "server.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
-    return;
-} 
-
-// Read from CSV file we are using for documentation
-void read_CSV(lfs_t *lfs, lfs_file_t *file){
-    char read_text[5000] ="";
-    lfs_file_open(lfs, file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
-    lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
-    lfs_file_close(lfs, file);
-
-    printf("%s\n", read_text);
     return;
 }
 
 // Reset CSV file to ensure that every test has a clean slate
 void reset_csv(lfs_t *lfs, lfs_file_t *file){
-    lfs_file_open(lfs, file, "boot_count", LFS_O_TRUNC); 
+    lfs_file_open(lfs, file, "server.csv", LFS_O_TRUNC); 
     lfs_file_close(lfs, file); 
     return;  
 }
@@ -137,8 +131,8 @@ int main() {
     }
 
     //mount 
-    int err = lfs_mount(&lfs, config); 
-    if(err != LFS_ERR_OK){
+    int error = lfs_mount(&lfs, config); 
+    if(error != LFS_ERR_OK){
         printf("err did not work\n");
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
@@ -146,7 +140,12 @@ int main() {
 
     printf("\n--UDP SERVER--\n"); 
 
-    reset_csv(&lfs, &file);
+    reset_csv(&lfs, &file); 
+
+    write_to_CSV("This is test number 1\n", &lfs, &file);
+    write_to_CSV("This is test number 2 1234567890\n", &lfs, &file);
+    write_to_CSV("This is test number 3 asjdhflkahsjhdfjhasjdhfjhasdhflhaskjdhfjahsldfhkasdjlfhasjkhfj\n", &lfs, &file);
+    write_to_CSV("This is test number 4 !@#$^&*())))))\n", &lfs, &file);
 
     // Initialize WiFi
     if (cyw43_arch_init()) {

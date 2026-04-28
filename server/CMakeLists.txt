@@ -38,7 +38,7 @@ pico_sdk_init()
 add_executable(UDP_Connection UDP_Connection.c )
 
 # Include pico-lfs library
-add_subdirectory(libs/pico-lfs)
+add_subdirectory(pico-lfs)
 
 pico_set_program_name(UDP_Connection "UDP_Connection")
 pico_set_program_version(UDP_Connection "0.1")

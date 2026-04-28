@@ -53,17 +53,6 @@ void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
     return;
 } 
 
-// Read from CSV file we are using for documentation
-void read_CSV(lfs_t *lfs, lfs_file_t *file){
-    char read_text[5000] ="";
-    lfs_file_open(lfs, file, "client.csv", LFS_O_RDONLY | LFS_O_CREAT); 
-    lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
-    lfs_file_close(lfs, file);
-
-    printf("%s\n", read_text);
-    return;
-}
-
 // Reset CSV file to ensure that every test has a clean slate
 void reset_csv(lfs_t *lfs, lfs_file_t *file){
     lfs_file_open(lfs, file, "client.csv", LFS_O_TRUNC); 
