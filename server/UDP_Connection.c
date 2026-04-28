@@ -39,7 +39,7 @@ static lfs_t lfs;
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
     printf("written: %s\n", str);
-    lfs_file_open(lfs, file, "server.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
+    lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
     return;
@@ -47,7 +47,7 @@ void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
 
 // Reset CSV file to ensure that every test has a clean slate
 void reset_csv(lfs_t *lfs, lfs_file_t *file){
-    lfs_file_open(lfs, file, "server.csv", LFS_O_TRUNC); 
+    lfs_file_open(lfs, file, "client.csv", LFS_O_TRUNC); 
     lfs_file_close(lfs, file); 
     return;  
 }
