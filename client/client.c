@@ -158,15 +158,15 @@ static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
     netif_set_addr(sta_if, &ip, &nm, &gw);
     netif_set_up(sta_if);
     printf("Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
-    char text[] = "";
-    // sprintf(text, "Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
+    char text[32];
+    // snprintf(text, sizeof(text), "Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
     // write_to_csv(text, &lfs, &file);
 
     return true;
 }
 
 static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
-    char text[] = "";
+    char text[32];
     if (udp_client != NULL) {
         udp_remove(udp_client);
         udp_client = NULL;
@@ -182,7 +182,7 @@ static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
     err_t err = udp_bind(udp_client, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
         printf("UDP bind failed: %d\n", err);
-        // sprintf(text, "UDP bind failed: %d\n", err);
+        // snprintf(text, sizeof(text),"UDP bind failed: %d\n", err);
         // write_to_CSV(text, &lfs, &file);
         udp_remove(udp_client);
         udp_client = NULL;
@@ -191,13 +191,13 @@ static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
 
     udp_recv(udp_client, udp_recv_callback, NULL);
     printf("UDP socket ready on port %d\n", UDP_PORT);
-    // sprintf(text, "UDP socket ready on port %d\n", UDP_PORT);
+    // snprintf(text, sizeof(text), "UDP socket ready on port %d\n", UDP_PORT);
     // write_to_CSV(text, &lfs, &file);
     return true;
 }
 
 static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
-    char text[] = "";
+    char text[32];
     server_acked = false;
     ip_addr_t server_addr;
     ip4addr_aton(SERVER_IP, &server_addr);
@@ -206,7 +206,7 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     int attempts = 0;
 
     printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
-    // sprintf(text, "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
+    // snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
     // write_to_CSV(text, &lfs, &file);
 
     while (!server_acked && attempts < HELLO_MAX_RETRIES) {
@@ -218,7 +218,7 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
                 udp_sendto(udp_client, p, &server_addr, UDP_PORT);
                 pbuf_free(p);
                 printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                // sprintf(text, "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                // snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
                 // write_to_CSV(text, &lfs, &file);
             }
             last_hello_time = now;
@@ -229,7 +229,7 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
 
     if (!server_acked) {
         printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
-        // sprintf(text, "Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+        // snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
         // write_to_CSV(text, &lfs, &file);        
     }
 }
@@ -244,7 +244,7 @@ int main() {
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
-    char text[] = "";
+    char text[32];
 
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
@@ -292,7 +292,7 @@ int main() {
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            sprintf(text, "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
             write_to_CSV(text, &lfs, &file);
 
             cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);

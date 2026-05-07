@@ -38,7 +38,7 @@ static lfs_t lfs;
 
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
-    printf("written: %s\n", str);
+    printf("%s\n", str);
     lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
@@ -53,15 +53,18 @@ void reset_csv(lfs_t *lfs, lfs_file_t *file){
 }
 
 // Send a state packet to the registered client
-void send_state_packet(rocket_state_t state) {
+void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
+    // char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
     if (!client_connected) {
         printf("No client connected yet\n");
+        // write_to_CSV("No client connected yet\n", &lfs, &file);
         return;
     }
 
     //creat packet snprintf prevents buffer overflow. Could switch to binary packets if really need to
     char packet[32];
     snprintf(packet, sizeof(packet), "STATE:%d", state);
+    // write_to_CSV(packet, &lfs, &file);
 
     // Send via UDP
     // LwIP uses pbufs for packet data, stands for packet buffers. Think of them as an envelope for our data
@@ -73,8 +76,12 @@ void send_state_packet(rocket_state_t state) {
         err_t err = udp_sendto(udp_sender, p, &client_ip, UDP_PORT);
         if (err == ERR_OK) {
             printf("Sent: %s\n", packet);
+            // snprintf(text, "Sent: %s\n", packet);
+            // write_to_CSV(text, &lfs, &file);
         } else {
             printf("Send failed: %d\n", err);
+            // snprintf(text, "Sentd failed: %s\n", err);
+            // write_to_CSV(text, &lfs, &file);
         }
         pbuf_free(p);
     }
@@ -91,18 +98,23 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     if (p == NULL) return;
 
     char buffer[128];
+    char text[32];
     u16_t copy_len = p->len < sizeof(buffer) - 1 ? p->len : sizeof(buffer) - 1;
     memcpy(buffer, p->payload, copy_len);
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
     printf("Received from client: %s\n", buffer);
+    // snprintf(text, "Received from client: %s\n", buffer);
+    // write_to_CSV(text, &lfs, &file);
 
      // If the client IP is not saved yet, save it
     if (!client_connected) {
         ip_addr_copy(client_ip, *addr);
         client_connected = true;
         printf("Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        // snprintf(text, "Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        // write_to_CSV(text, &lfs, &file);
     }
 
     // ACK so the client knows the server is alive and stops retrying HELLO
@@ -218,7 +230,7 @@ int main() {
 
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
-            send_state_packet(current_state);
+            send_state_packet(current_state, &lfs, &file);
             last_send_time = now;
         }
 
