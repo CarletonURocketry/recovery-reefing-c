@@ -138,22 +138,20 @@ int main() {
         lfs_mount(&lfs, config);
     }
 
-    printf("\n--UDP SERVER--\n"); 
-
     reset_csv(&lfs, &file); 
 
-    write_to_CSV("This is test number 1\n", &lfs, &file);
-    write_to_CSV("This is test number 2 1234567890\n", &lfs, &file);
-    write_to_CSV("This is test number 3 asjdhflkahsjhdfjhasjdhfjhasdhflhaskjdhfjahsldfhkasdjlfhasjkhfj\n", &lfs, &file);
-    write_to_CSV("This is test number 4 !@#$^&*())))))\n", &lfs, &file);
+    //printf("\n--UDP SERVER--\n"); 
+    write_to_CSV("=== ROCKET UDP SERVER===\n", &lfs, &file);
 
     // Initialize WiFi
     if (cyw43_arch_init()) {
-        printf("WiFi init failed\n");
+        //printf("WiFi init failed\n");
+        write_to_CSV("WiFi init failed\n", &lfs, &file);
         return -1;
     }
 
-    printf("Starting Access Point...\n");
+    //printf("Starting Access Point...\n");
+    write_to_CSV("Starting Access Point...\n", &lfs, &file);
     cyw43_arch_enable_ap_mode(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK);
 
     // Give the AP interface time to initialise before configuring it
@@ -176,19 +174,23 @@ int main() {
     ip4addr_aton(AP_GW, &gw);
     netif_set_addr(ap_if, &ipaddr, &nm, &gw);
 
-    printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
-    printf("AP started: %s\n", WIFI_SSID);
+    //printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
+    write_to_CSV(("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr)), &lfs, &file);
+    //printf("AP started: %s\n", WIFI_SSID);
+    write_to_CSV(("AP started: %s\n", WIFI_SSID), &lfs, &file);
 
     // Create UDP socket and bind AFTER the AP interface has its IP set
     udp_sender = udp_new();
     if (udp_sender == NULL) {
-        printf("Failed to create UDP socket\n");
+        //printf("Failed to create UDP socket\n");
+        write_to_CSV("Failed to create UDP socket\n", &lfs, &file);
         return -1;
     }
 
     err_t err = udp_bind(udp_sender, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
-        printf("UDP bind failed: %d\n", err);
+        //printf("UDP bind failed: %d\n", err);
+        write_to_CSV(("UDP bind failed: %d\n", err), &lfs, &file);
         return -1;
     }
 
@@ -196,8 +198,10 @@ int main() {
     // When a packet arrives on udp_sender, call the function udp_recv_callback (NULL means no user arg)
     udp_recv(udp_sender, udp_recv_callback, NULL);
 
-    printf("UDP server ready on port %d\n", UDP_PORT);
-    printf("Waiting for client hello...\n\n");
+    //printf("UDP server ready on port %d\n", UDP_PORT);
+    write_to_CSV(("UDP server ready on port %d\n", UDP_PORT), &lfs, &file);
+    //printf("Waiting for client hello...\n\n");
+    write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
 
     // Main loop - send different states
     rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
@@ -218,7 +222,8 @@ int main() {
         // Cycle through states every 5 seconds for testing
         if (now - state_change_time >= 5000) {
             current_state = (rocket_state_t)((current_state + 1) % 3);
-            printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+            //printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+            write_to_CSV(("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state), &lfs, &file);
             state_change_time = now;
         }
 

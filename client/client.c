@@ -235,22 +235,19 @@ int main() {
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
     }
-
-    printf("\n=== ROCKET UDP CLIENT ===\n");
-    reset_csv(&lfs, &file);
-    
-    write_to_CSV("Test no. 1\n", &lfs, &file);
-    write_to_CSV("Test no. 2\n", &lfs, &file);
-    write_to_CSV("Test no. 3]+++\n", &lfs, &file);
-    write_to_CSV("Test no. 4 asdjfkajdskfj;klajsdjfkl;asdjfkl;adjfklajlk;sdflkajksdjfajksdf;asdjf\n", &lfs, &file);
+    reset_csv(&lfs, &file); // Reset CSV file to prepare for next test
+    //printf("\n=== ROCKET UDP CLIENT ===\n");
+    write_to_CSV("=== ROCKET UDP CLIENT ===\n", &lfs, &file);
 
     if (!wifi_init_and_connect()) {
-        printf("Initial WiFi connect failed\n");
+        //printf("Initial WiFi connect failed\n");
+        write_to_CSV("Initial WiFi connect failed\n", &lfs, &file);
         return -1;
     }
 
     if (!setup_udp()) {
-        printf("Initial UDP setup failed\n");
+        //printf("Initial UDP setup failed\n");
+        write_to_CSV("Initial UDP setup failed\n", &lfs, &file);
         return -1;
     }
 
@@ -265,11 +262,13 @@ int main() {
 
         config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
         if(!config){
-            printf("Out of memory\n");
+            //printf("Out of memory\n");
+            write_to_CSV("Out of memory\n", &lfs, &file);
     }
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
-            printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            write_to_CSV(("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS), &lfs, &file);
 
             cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
             sleep_ms(500);
@@ -277,14 +276,16 @@ int main() {
             sleep_ms(500);
 
             if (!wifi_init_and_connect()) {
-                printf("Reconnect failed, will retry next watchdog tick\n");
+                //printf("Reconnect failed, will retry next watchdog tick\n");
+                write_to_CSV("Reconnect failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
             }
 
             if (!setup_udp()) {
-                printf("UDP setup failed, will retry next watchdog tick\n");
+                //printf("UDP setup failed, will retry next watchdog tick\n");
+                write_to_CSV("UDP setup failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
@@ -292,7 +293,8 @@ int main() {
 
             do_hello_handshake();
 
-            printf("Fully reconnected, resuming...\n");
+            //printf("Fully reconnected, resuming...\n");
+            write_to_CSV("Fully reconnected, resuming...\n", &lfs, &file);
             last_packet_time_ms = to_ms_since_boot(get_absolute_time());
         }
 
