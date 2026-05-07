@@ -123,6 +123,7 @@ int main() {
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
+    char text[] = "";
 
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
@@ -190,7 +191,8 @@ int main() {
     err_t err = udp_bind(udp_sender, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
         //printf("UDP bind failed: %d\n", err);
-        write_to_CSV(("UDP bind failed: %d\n", err), &lfs, &file);
+        sprintf(text, "UDP bind failed: %d\n", err);
+        write_to_CSV(text, &lfs, &file);
         return -1;
     }
 
@@ -199,7 +201,8 @@ int main() {
     udp_recv(udp_sender, udp_recv_callback, NULL);
 
     //printf("UDP server ready on port %d\n", UDP_PORT);
-    write_to_CSV(("UDP server ready on port %d\n", UDP_PORT), &lfs, &file);
+    sprintf(text, "UDP server ready on port %d\n", UDP_PORT);
+    write_to_CSV(text, &lfs, &file);
     //printf("Waiting for client hello...\n\n");
     write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
 
@@ -223,7 +226,8 @@ int main() {
         if (now - state_change_time >= 5000) {
             current_state = (rocket_state_t)((current_state + 1) % 3);
             //printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
-            write_to_CSV(("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state), &lfs, &file);
+            sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+            write_to_CSV(text, &lfs, &file);
             state_change_time = now;
         }
 

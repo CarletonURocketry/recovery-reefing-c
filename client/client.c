@@ -221,6 +221,7 @@ int main() {
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
+    char text[] = "";
 
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
@@ -268,7 +269,8 @@ int main() {
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            write_to_CSV(("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS), &lfs, &file);
+            sprintf(text, "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            write_to_CSV(text, &lfs, &file);
 
             cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
             sleep_ms(500);
