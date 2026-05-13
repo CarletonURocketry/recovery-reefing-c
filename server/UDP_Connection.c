@@ -36,9 +36,14 @@ bool client_connected = false;
 static struct lfs_config * config;
 static lfs_t lfs;
 
+struct csv_struct {
+    lfs_t *recv_lfs;
+    lfs_file_t *recv_file;
+};
+
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
-    printf("%s\n", str);
+    printf("%s", str);
     lfs_file_open(lfs, file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
     lfs_file_write(lfs, file, str, strlen(str)); // Write to system
     lfs_file_close(lfs, file);
@@ -54,17 +59,17 @@ void reset_csv(lfs_t *lfs, lfs_file_t *file){
 
 // Send a state packet to the registered client
 void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
-    // char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
+    char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
     if (!client_connected) {
         printf("No client connected yet\n");
-        // write_to_CSV("No client connected yet\n", &lfs, &file);
+        write_to_CSV("No client connected yet\n", lfs, file);
         return;
     }
 
     //creat packet snprintf prevents buffer overflow. Could switch to binary packets if really need to
     char packet[32];
     snprintf(packet, sizeof(packet), "STATE:%d", state);
-    // write_to_CSV(packet, &lfs, &file);
+    write_to_CSV(packet, lfs, file);
 
     // Send via UDP
     // LwIP uses pbufs for packet data, stands for packet buffers. Think of them as an envelope for our data
@@ -75,13 +80,13 @@ void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
         // Sends the packet p to from UDP socket udp_sender, to the client IP and port
         err_t err = udp_sendto(udp_sender, p, &client_ip, UDP_PORT);
         if (err == ERR_OK) {
-            printf("Sent: %s\n", packet);
-            // snprintf(text, "Sent: %s\n", packet);
-            // write_to_CSV(text, &lfs, &file);
+            // printf("Sent: %s\n", packet);
+            snprintf(text, sizeof(text),"Sent: %s\n", packet);
+            write_to_CSV(text, lfs, file);
         } else {
-            printf("Send failed: %d\n", err);
-            // snprintf(text, "Sentd failed: %s\n", err);
-            // write_to_CSV(text, &lfs, &file);
+            // printf("Send failed: %d\n", err);
+            snprintf(text, sizeof(text), "Send failed: %s\n", err);
+            write_to_CSV(text, lfs, file);
         }
         pbuf_free(p);
     }
@@ -96,6 +101,10 @@ void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
 void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
                        const ip_addr_t *addr, u16_t port) {
     if (p == NULL) return;
+    
+    struct csv_struct *s = (struct csv_struct *)arg; // takes arg csv info and transfers it to s
+    lfs_t *lfs = s->recv_lfs;
+    lfs_file_t *file = s->recv_file;
 
     char buffer[128];
     char text[32];
@@ -104,17 +113,17 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
-    printf("Received from client: %s\n", buffer);
-    // snprintf(text, "Received from client: %s\n", buffer);
-    // write_to_CSV(text, &lfs, &file);
+    // printf("Received from client: %s\n", buffer);
+    snprintf(text, sizeof(text), "Received from client: %s\n", buffer);
+    write_to_CSV(text, lfs, file);
 
      // If the client IP is not saved yet, save it
     if (!client_connected) {
         ip_addr_copy(client_ip, *addr);
         client_connected = true;
-        printf("Client registered at: %s\n", ipaddr_ntoa(&client_ip));
-        // snprintf(text, "Client registered at: %s\n", ipaddr_ntoa(&client_ip));
-        // write_to_CSV(text, &lfs, &file);
+        // printf("Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        snprintf(text, sizeof(text), "Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        write_to_CSV(text, lfs, file);
     }
 
     // ACK so the client knows the server is alive and stops retrying HELLO
@@ -135,7 +144,7 @@ int main() {
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
-    char text[] = "";
+    char text[64];
 
     //config
     config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
@@ -208,9 +217,13 @@ int main() {
         return -1;
     }
 
+    static struct csv_struct csv;
+    csv.recv_lfs = &lfs;
+    csv.recv_file = &file;
+
     // Set receive callback (aka, registers our udp_recv_callback when packet is received)
     // When a packet arrives on udp_sender, call the function udp_recv_callback (NULL means no user arg)
-    udp_recv(udp_sender, udp_recv_callback, NULL);
+    udp_recv(udp_sender, udp_recv_callback, &csv);
 
     //printf("UDP server ready on port %d\n", UDP_PORT);
     sprintf(text, "UDP server ready on port %d\n", UDP_PORT);

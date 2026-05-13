@@ -1,3 +1,6 @@
 [submodule "C pico codes/Make_CSV/libs/pico-lfs"]
 	path = C pico codes/Make_CSV/libs/pico-lfs
 	url = https://github.com/tjko/pico-lfs.git
+[submodule "client/libs/RP2040-PWM-Tone"]
+	path = client/libs/RP2040-PWM-Tone
+	url = https://github.com/TuriSc/RP2040-PWM-Tone.git
