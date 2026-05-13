@@ -52,7 +52,7 @@ void pico_set_led(bool led_on) {
 
 // Read from CSV file we are using for documentation
 void read_CSV(lfs_t *lfs, lfs_file_t *file){
-    char read_text[5000] ="";
+    char read_text[24000] ="";
     lfs_file_open(lfs, file, "client.csv", LFS_O_RDONLY | LFS_O_CREAT); 
     lfs_file_read(lfs, file, &read_text, sizeof(read_text)-1); 
     lfs_file_close(lfs, file);

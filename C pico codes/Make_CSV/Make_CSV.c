@@ -108,7 +108,7 @@ int main()
     //lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDONLY | LFS_O_CREAT); 
     //lfs_file_read(&lfs, &file, &bye, 8000); 
     //lfs_file_close(&lfs, &file);
-    reset_csv(&lfs, &file);
+    // reset_csv(&lfs, &file);
     sleep_ms(50);
     write_to_CSV("This is the written test", &lfs, &file);
     sleep_ms(50);
