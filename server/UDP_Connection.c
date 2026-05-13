@@ -1,6 +1,7 @@
 // SERVER (Main Pico) - Sends UDP packets
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "pico_lfs.h"
@@ -41,6 +42,15 @@ struct csv_struct {
     lfs_file_t *recv_file;
 };
 
+void print_memory_usage() {
+    struct mallinfo info = mallinfo();
+
+    printf("Total allocated: %d bytes\n", info.uordblks);
+    printf("Total free: %d bytes\n", info.fordblks);
+    printf("Total heap size: %d bytes\n", info.arena);
+    printf("Largest free block: %d bytes\n", info.ordblks);
+}
+
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
     printf("%s", str);
@@ -61,8 +71,9 @@ void reset_csv(lfs_t *lfs, lfs_file_t *file){
 void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
     char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
     if (!client_connected) {
-        printf("No client connected yet\n");
+        // printf("No client connected yet\n");
         write_to_CSV("No client connected yet\n", lfs, file);
+        // print_memory_usage();
         return;
     }
 
@@ -252,6 +263,7 @@ int main() {
             current_state = (rocket_state_t)((current_state + 1) % 3);
             //printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
             sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+            // print_memory_usage();
             write_to_CSV(text, &lfs, &file);
             state_change_time = now;
         }

@@ -49,6 +49,15 @@ struct csv_struct {
     lfs_file_t *recv_file;
 };
 
+void print_memory_usage() {
+    struct mallinfo info = mallinfo();
+
+    printf("Total allocated: %d bytes\n", info.uordblks);
+    printf("Total free: %d bytes\n", info.fordblks);
+    printf("Total heap size: %d bytes\n", info.arena);
+    printf("Largest free block: %d bytes\n", info.ordblks);
+}
+
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
     printf("%s", str);
@@ -237,12 +246,13 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
             last_hello_time = now;
         }
         cyw43_arch_poll();
-        sleep_ms(10);
+        sleep_ms(100);
     }
 
     if (!server_acked) {
         // printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
         snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+        print_memory_usage();
         write_to_CSV(text, lfs, file);        
     }
 }
@@ -287,17 +297,18 @@ int main() {
     do_hello_handshake(&lfs, &file);
 
     last_packet_time_ms = to_ms_since_boot(get_absolute_time());
+    print_memory_usage();
 
     // Main loop
     while (true) {
         cyw43_arch_poll();
         uint32_t now = to_ms_since_boot(get_absolute_time());
 
-        config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
-        if(!config){
+        // config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
+        //if(!config){
             //printf("Out of memory\n");
-            write_to_CSV("Out of memory\n", &lfs, &file);
-    }
+          //  write_to_CSV("Out of memory\n", &lfs, &file);
+        //}
 
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
