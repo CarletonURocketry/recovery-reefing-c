@@ -9,6 +9,7 @@
 #include "lwip/netif.h"
 #include "lwip/ip_addr.h"
 #include "lwip/ip4_addr.h"
+#include "pwm-tone.h"
 
 //wifi infomration
 #define WIFI_SSID     "ROCKET_AP"
@@ -20,6 +21,9 @@
 #define AP_NM   "255.255.255.0"
 #define AP_GW   "192.168.4.1"
 
+//buzzer pin TBD
+#define PIEZO_PIN   0
+
 // Packet types to send
 typedef enum {
     STATE_NOTHING_DEPLOYED = 0,
@@ -29,10 +33,27 @@ typedef enum {
 
 #define FS_SIZE (256 * 1024)
 
+//buzzer generator 
+tonegenerator_t generator;
+
 // Global UDP control block (PCB = Protocol Control Block, lwIP's internal socket structure)
 struct udp_pcb *udp_sender;
 ip_addr_t client_ip;
 bool client_connected = false;
+
+note_t VICTORY[] = {
+    {NOTE_G4, 8},
+    {NOTE_G4, 16},
+    {NOTE_G4, 16},
+    {NOTE_D5, 4},
+    {REST, 8},
+    {MELODY_END, 0},
+};
+
+void tone_gen(){
+    tone_init(&generator, PIEZO_PIN);
+    melody(&generator, VICTORY, 0);
+}
 
 static struct lfs_config * config;
 static lfs_t lfs;
@@ -42,14 +63,7 @@ struct csv_struct {
     lfs_file_t *recv_file;
 };
 
-void print_memory_usage() {
-    struct mallinfo info = mallinfo();
 
-    printf("Total allocated: %d bytes\n", info.uordblks);
-    printf("Total free: %d bytes\n", info.fordblks);
-    printf("Total heap size: %d bytes\n", info.arena);
-    printf("Largest free block: %d bytes\n", info.ordblks);
-}
 
 // Write to CSV file we are using for documentation
 void write_to_CSV(char str[], lfs_t *lfs, lfs_file_t *file){
@@ -157,11 +171,6 @@ int main() {
     lfs_file_t file; 
     char text[64];
 
-    //config
-    config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
-    if(!config){
-        printf("Out of memory\n");
-    }
 
     //mount 
     int error = lfs_mount(&lfs, config); 
