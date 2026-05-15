@@ -22,7 +22,7 @@
 #define AP_GW   "192.168.4.1"
 
 //buzzer pin TBD
-#define PIEZO_PIN   0
+#define PIEZO_PIN   27
 
 // Packet types to send
 typedef enum {
@@ -162,6 +162,8 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 }
 //main
 int main() {
+    
+
     stdio_init_all();
     sleep_ms(3000); // Wait for USB serial to establish
 
@@ -184,6 +186,8 @@ int main() {
 
     //printf("\n--UDP SERVER--\n"); 
     write_to_CSV("=== ROCKET UDP SERVER===\n", &lfs, &file);
+
+
 
     // Initialize WiFi
     if (cyw43_arch_init()) {
@@ -255,6 +259,7 @@ int main() {
     rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
     uint32_t last_send_time    = 0;
     uint32_t state_change_time = 0;
+   
 
     while (true) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
