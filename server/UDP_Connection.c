@@ -32,9 +32,7 @@ typedef enum {
 } rocket_state_t;
 
 #define FS_SIZE (256 * 1024)
-
-//buzzer generator 
-tonegenerator_t generator;
+#define FS_OFFSET (1024 * 1024)
 
 // Global UDP control block (PCB = Protocol Control Block, lwIP's internal socket structure)
 struct udp_pcb *udp_sender;
@@ -50,13 +48,17 @@ note_t VICTORY[] = {
     {MELODY_END, 0},
 };
 
+
+
+// extern struct lfs_config pico_cfg;
+static lfs_t lfs;
+struct lfs_config *config;
+tonegenerator_t generator;
+
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
     melody(&generator, VICTORY, 0);
 }
-
-static struct lfs_config * config;
-static lfs_t lfs;
 
 struct csv_struct {
     lfs_t *recv_lfs;
@@ -170,9 +172,17 @@ int main() {
     lfs_t lfs;
     lfs_file_t file; 
     char text[64];
-
+    //printf("read  = %p\n", config.read);
+    //printf("prog  = %p\n", config.prog);
+    //printf("erase = %p\n", config.erase);
+    //printf("sync  = %p\n", config.sync);
 
     //mount 
+    config = pico_lfs_init(FS_OFFSET, FS_SIZE);
+    if(!config){
+        printf("pico_lfs_init failed");
+    }
+
     int error = lfs_mount(&lfs, config); 
     if(error != LFS_ERR_OK){
         printf("err did not work\n");
@@ -180,10 +190,13 @@ int main() {
         lfs_mount(&lfs, config);
     }
 
-    reset_csv(&lfs, &file); 
+    tone_init(&generator, PIEZO_PIN);
 
+    reset_csv(&lfs, &file); 
     //printf("\n--UDP SERVER--\n"); 
-    write_to_CSV("=== ROCKET UDP SERVER===\n", &lfs, &file);
+    write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
+
+    tone_gen();
 
     // Initialize WiFi
     if (cyw43_arch_init()) {
