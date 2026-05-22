@@ -10,6 +10,7 @@
 #include "lwip/ip_addr.h"
 #include "lwip/ip4_addr.h"
 #include "pwm-tone.h"
+#include "hardware/gpio.h"
 
 //wifi infomration
 #define WIFI_SSID     "ROCKET_AP"
@@ -23,6 +24,8 @@
 
 //buzzer pin TBD
 #define PIEZO_PIN   27
+
+#define ALTIMETERPIN 28
 
 // Packet types to send
 typedef enum {
@@ -275,6 +278,10 @@ int main() {
 
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, client_connected ? 1 : 0);
 
+        if (gpio_get(ALTIMETERPIN)){
+            
+        }
+        
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
             send_state_packet(current_state, &lfs, &file);
