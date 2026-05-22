@@ -37,12 +37,12 @@ static lfs_t lfs;
 //struct mallinfo m = mallinfo();
 
 typedef enum {
-    STATE_NOTHING_DEPLOYED = 0,
-    STATE_MAIN_DEPLOYED    = 1,
-    STATE_CUT_REEFING      = 2
+    IDLE = 0,
+    CONNECTED = 1,
+    BLOW_UP = 2
 } rocket_state_t;
 
-rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
+rocket_state_t current_state = IDLE
 bool server_acked = false;
 
 struct udp_pcb *udp_client = NULL; 
@@ -317,7 +317,7 @@ int main() {
             //printf("Out of memory\n");
           //  write_to_CSV("Out of memory\n", &lfs, &file);
         //}
-
+        
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
             snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
