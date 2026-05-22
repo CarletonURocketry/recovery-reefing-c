@@ -22,7 +22,7 @@
 #define AP_GW   "192.168.4.1"
 
 //buzzer pin TBD
-#define PIEZO_PIN   0
+#define PIEZO_PIN   27
 
 // Packet types to send
 typedef enum {
@@ -190,7 +190,7 @@ int main() {
         lfs_mount(&lfs, config);
     }
 
-    tone_init(&generator, PIEZO_PIN);
+    // tone_init(&generator, PIEZO_PIN);
 
     reset_csv(&lfs, &file); 
     //printf("\n--UDP SERVER--\n"); 
@@ -211,6 +211,7 @@ int main() {
 
     // Give the AP interface time to initialise before configuring it
     sleep_ms(500);
+    tone_gen();
 
 
     // Configure the AP interface IP directly from cyw43_state.
