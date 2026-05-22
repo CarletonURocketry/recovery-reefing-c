@@ -9,6 +9,7 @@
 #include "lwip/netif.h"
 #include "lwip/ip4_addr.h"
 #include "lwip/dhcp.h"
+#include "hardware/gpio.h"
 
 #define WIFI_SSID     "ROCKET_AP"
 #define WIFI_PASSWORD "rocket123"
@@ -27,6 +28,8 @@
 
 #define PACKET_TIMEOUT_MS 5000
 #define FS_SIZE (256 * 1024)
+
+#define EMATCHPIN 10
 
 volatile uint32_t last_packet_time_ms = 0;
 static struct lfs_config * config;
@@ -48,6 +51,11 @@ struct csv_struct {
     lfs_t *recv_lfs;
     lfs_file_t *recv_file;
 };
+
+// Exactly what the function says
+void blow_crap_up(){
+    gpio_put(EMATCHPIN, 1);
+}
 
 void print_memory_usage() {
     struct mallinfo info = mallinfo();
