@@ -286,10 +286,10 @@ int main() {
         if (!gpio_get(ALTIMETERPIN)){
             
 
-            // *** DONT TEST YET ***
-            // TODO: reverse debouncing
+            int debug_timer = 100000; // <<<************************************************************************************************* <-- THIS VALUE
+            while(debug_timer >0){debug_timer = debug_timer-1;}
             
-            if (!gpio_get(ALTIMETERPIN)){
+            if (gpio_get(ALTIMETERPIN)){
                 current_state = BLOW_UP;
                 while(true){
                     send_state_packet(current_state, &lfs, &file);
