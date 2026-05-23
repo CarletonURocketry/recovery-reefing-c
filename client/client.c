@@ -52,9 +52,30 @@ struct csv_struct {
     lfs_file_t *recv_file;
 };
 
+void init_leds(){
+    gpio_init(11);
+    gpio_set_dir(11, GPIO_OUT);
+    gpio_init(12);
+    gpio_set_dir(12, GPIO_OUT);
+    gpio_init(13);
+    gpio_set_dir(13, GPIO_OUT);
+}
+
+
+void init_ematch_pin(){
+    gpio_init(EMATCHPIN);
+    gpio_set_dir(EMATCHPIN, GPIO_OUT);
+}
+
+void init(){
+    stdio_init_all();
+
+    init_ematch_pin();
+}
+
 // Exactly what the function says
 void blow_up(){
-    gpio_put(EMATCHPIN, 1);
+    gpio_put(11, 1);
 }
 
 void print_memory_usage() {
@@ -273,7 +294,8 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
 
 int main() {
     stdio_init_all();
-    
+
+    init();
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
