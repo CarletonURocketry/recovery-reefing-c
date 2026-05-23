@@ -88,6 +88,29 @@ void reset_csv(lfs_t *lfs, lfs_file_t *file){
     return;  
 }
 
+void init_leds(){
+    gpio_init(11);
+    gpio_set_dir(11, GPIO_OUT);
+    gpio_init(12);
+    gpio_set_dir(12, GPIO_OUT);
+    gpio_init(13);
+    gpio_set_dir(13, GPIO_OUT);
+}
+
+void init_altimeter_pin(){
+    gpio_init(ALTIMETERPIN);
+    gpio_set_dir(ALTIMETERPIN, GPIO_IN);
+
+    // Altimeter is pull up; 1 when IN == 0, 0 when IN == 1
+    gpio_pull_up(ALTIMETERPIN);
+}
+
+void init(){
+    stdio_init_all();
+
+    init_altimeter_pin();
+}
+
 // Send a state packet to the registered client
 void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
     char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
@@ -171,6 +194,8 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 int main() {
     stdio_init_all();
 
+    init();
+    
     bool buzzer_played = false;
     
     sleep_ms(3000); // Wait for USB serial to establish
