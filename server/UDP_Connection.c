@@ -29,9 +29,9 @@
 
 // Packet types to send
 typedef enum {
-    STATE_NOTHING_DEPLOYED = 0,
-    STATE_MAIN_DEPLOYED    = 1,
-    STATE_CUT_REEFING      = 2
+    IDLE = 0,
+    CONEECTED = 1,
+    BLOW_UP = 2
 } rocket_state_t;
 
 #define FS_SIZE (256 * 1024)
@@ -57,6 +57,8 @@ note_t VICTORY[] = {
 static lfs_t lfs;
 struct lfs_config *config;
 tonegenerator_t generator;
+
+rocket_state_t current_state = IDLE;
 
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
@@ -168,6 +170,9 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 //main
 int main() {
     stdio_init_all();
+
+    bool buzzer_played = false;
+    
     sleep_ms(3000); // Wait for USB serial to establish
 
     printf("\n--Initializing CSV File--\n");
@@ -269,18 +274,30 @@ int main() {
     write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
 
     // Main loop - send different states
-    rocket_state_t current_state = STATE_NOTHING_DEPLOYED;
+    
     uint32_t last_send_time    = 0;
     uint32_t state_change_time = 0;
-
+    
     while (true) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
 
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, client_connected ? 1 : 0);
 
-        if (gpio_get(ALTIMETERPIN)){
+        if (!gpio_get(ALTIMETERPIN)){
             
+
+            // *** DONT TEST YET ***
+            // TODO: reverse debouncing
+            
+            if (!gpio_get(ALTIMETERPIN)){
+                current_state = BLOW_UP;
+                while(true){
+                    send_state_packet(current_state, &lfs, &file);
+                }
+            }
         }
+
+
         
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
