@@ -53,7 +53,7 @@ struct csv_struct {
 };
 
 // Exactly what the function says
-void blow_crap_up(){
+void blow_up(){
     gpio_put(EMATCHPIN, 1);
 }
 
@@ -115,16 +115,22 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     current_state = (rocket_state_t)state;
 
     switch (current_state) {
-        case STATE_NOTHING_DEPLOYED:
+        case IDLE:
             // printf("  -> Nothing deployed\n");
             write_to_CSV("  -> Nothing deployed\n", s->recv_lfs, s->recv_file);
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
             break;
-        case STATE_MAIN_DEPLOYED:
+        case CONNECTED:
             // printf("  -> Main parachute deployed!\n");
             write_to_CSV("  -> Main parachute deployed\n", s->recv_lfs, s->recv_file);
+            
             break;
-        case STATE_CUT_REEFING:
+        case BLOW_UP:
+
+            while(true){
+                blow_up();
+            }
+            
             // printf("  -> CUT REEFING LINE!!!\n");
             write_to_CSV("  -> CUT REEFING LINE!!!\n", s->recv_lfs, s->recv_file);
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
