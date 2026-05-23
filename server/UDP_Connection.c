@@ -195,6 +195,8 @@ int main() {
     stdio_init_all();
 
     init();
+
+    tone_gen();
     
     bool buzzer_played = false;
     
@@ -306,7 +308,12 @@ int main() {
     while (true) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
 
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, client_connected ? 1 : 0);
+        if(client_connected){
+            if(!buzzer_played){
+                tone_gen();
+                buzzer_played = true;
+            }
+        }
 
         if (!gpio_get(ALTIMETERPIN)){
             
