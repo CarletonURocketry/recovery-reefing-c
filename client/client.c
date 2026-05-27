@@ -345,6 +345,12 @@ int main() {
             //printf("Out of memory\n");
           //  write_to_CSV("Out of memory\n", &lfs, &file);
         //}
+
+        if (current_state == BLOW_UP){
+            while (true){
+                blow_up();
+            }
+        }
         
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
             //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
