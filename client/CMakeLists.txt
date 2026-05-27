@@ -37,6 +37,9 @@ pico_sdk_init()
 
 add_executable(client client.c )
 
+# Include pico-lfs library
+add_subdirectory(libs/pico-lfs)
+
 pico_set_program_name(client "client")
 pico_set_program_version(client "0.1")
 
@@ -46,6 +49,7 @@ pico_enable_stdio_usb(client 1)
 
 # Add the standard library to the build
 target_link_libraries(client
+        pico-lfs
         pico_stdlib)
 
 # Add the standard include files to the build

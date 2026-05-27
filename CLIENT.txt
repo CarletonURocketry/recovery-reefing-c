@@ -1,0 +1,19 @@
+#include "pico/stdlib.h"
+#include "hardware/gpio.h"
+
+#define EMATCHPIN 10
+
+void blow_crap_up(){
+    gpio_put(EMATCHPIN, 1);
+}
+
+int main(){
+
+    // *** REPLACE TRUE WITH SIGNAL RECEIVED ***
+    if (true){
+        blow_crap_up();
+    }
+
+    return 0;
+}
+

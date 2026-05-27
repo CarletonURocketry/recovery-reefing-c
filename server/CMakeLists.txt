@@ -37,6 +37,12 @@ pico_sdk_init()
 
 add_executable(UDP_Connection UDP_Connection.c )
 
+# Include pico-lfs library
+add_subdirectory(pico-lfs)
+
+#include PWM Tone library
+add_subdirectory(RP2040-PWM-Tone)
+
 pico_set_program_name(UDP_Connection "UDP_Connection")
 pico_set_program_version(UDP_Connection "0.1")
 
@@ -46,7 +52,9 @@ pico_enable_stdio_usb(UDP_Connection 1)
 
 # Add the standard library to the build
 target_link_libraries(UDP_Connection
-        pico_stdlib)
+        pico-lfs
+        pico_stdlib
+        pwm_tone)
 
 # Add the standard include files to the build
 target_include_directories(UDP_Connection PRIVATE
