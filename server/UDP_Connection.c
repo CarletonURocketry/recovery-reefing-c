@@ -312,41 +312,41 @@ int main() {
             if(!buzzer_played){
                 tone_gen();
                 buzzer_played = true;
+                current_state = CONNECTED;
+                sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+                write_to_CSV(text, &lfs, &file);
+                state_change_time = now;
             }
         }
 
         if (!gpio_get(ALTIMETERPIN)){
-            
-
             int debug_timer = 100000; // <<<************************************************************************************************* <-- THIS VALUE
             while(debug_timer >0){debug_timer = debug_timer-1;}
             
             if (gpio_get(ALTIMETERPIN)){
                 current_state = BLOW_UP;
+                sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+                write_to_CSV(text, &lfs, &file);
+                state_change_time = now;
+                
                 while(true){
                     send_state_packet(current_state, &lfs, &file);
                 }
             }
         }
 
-
-        
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
             send_state_packet(current_state, &lfs, &file);
             last_send_time = now;
         }
-
-        // Cycle through states every 5 seconds for testing
-        if (now - state_change_time >= 5000) {
-            current_state = (rocket_state_t)((current_state + 1) % 3);
+            //current_state = (rocket_state_t)((current_state + 1) % 3);
             //printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
-            sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
+            //sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
             // print_memory_usage();
-            write_to_CSV(text, &lfs, &file);
-            state_change_time = now;
-        }
-
+            //write_to_CSV(text, &lfs, &file);
+            //state_change_time = now;
+        
         // Must be called regularly to pump WiFi/lwIP events
         cyw43_arch_poll();
         // Just so we don't use 100% CPU (for now?)
