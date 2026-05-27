@@ -30,7 +30,7 @@
 // Packet types to send
 typedef enum {
     IDLE = 0,
-    CONEECTED = 1,
+    CONNECTED = 1,
     BLOW_UP = 2
 } rocket_state_t;
 
