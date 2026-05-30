@@ -22,6 +22,11 @@
 #define AP_NM   "255.255.255.0"
 #define AP_GW   "192.168.4.1"
 
+//LEDs
+#define LED1 11
+#define LED2 12
+#define LED3 13
+
 //buzzer pin TBD
 #define PIEZO_PIN   27
 
@@ -194,10 +199,6 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 int main() {
     stdio_init_all();
 
-    init();
-
-    tone_gen();
-    
     bool buzzer_played = false;
     
     sleep_ms(3000); // Wait for USB serial to establish
@@ -205,7 +206,7 @@ int main() {
     printf("\n--Initializing CSV File--\n");
     //declaration of FS + initialize file
     lfs_t lfs;
-    lfs_file_t file; 
+    lfs_file_t file;
     char text[64];
     //printf("read  = %p\n", config.read);
     //printf("prog  = %p\n", config.prog);
@@ -230,6 +231,8 @@ int main() {
     reset_csv(&lfs, &file); 
     //printf("\n--UDP SERVER--\n"); 
     write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
+
+    init();
 
     tone_gen();
 
@@ -320,17 +323,24 @@ int main() {
         }
 
         if (!gpio_get(ALTIMETERPIN)){
-            int debug_timer = 100000; // <<<************************************************************************************************* <-- THIS VALUE
-            while(debug_timer >0){debug_timer = debug_timer-1;}
             
-            if (gpio_get(ALTIMETERPIN)){
+            int debug_timer = 10000; // <<<************************************************************************************************* <-- THIS VALUE
+
+            while(debug_timer > 0){debug_timer = debug_timer-1;}
+            
+            if (!gpio_get(ALTIMETERPIN)){
                 current_state = BLOW_UP;
                 sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
                 write_to_CSV(text, &lfs, &file);
                 state_change_time = now;
+
                 
                 while(true){
+                    if(client_connected){
                     send_state_packet(current_state, &lfs, &file);
+                    gpio_put(LED1, 1);
+                    }
+                cyw43_arch_poll();
                 }
             }
         }
