@@ -42,7 +42,7 @@ typedef enum {
     BLOW_UP = 2
 } rocket_state_t;
 
-rocket_state_t current_state = IDLE
+rocket_state_t current_state;
 bool server_acked = false;
 
 struct udp_pcb *udp_client = NULL; 
@@ -71,6 +71,7 @@ void init(){
     stdio_init_all();
 
     init_ematch_pin();
+    init_leds();
 }
 
 // Exactly what the function says
@@ -295,7 +296,7 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
 int main() {
     stdio_init_all();
 
-    init();
+    
     //declaration of FS + initialize file
     lfs_t lfs;
     lfs_file_t file; 
@@ -317,6 +318,8 @@ int main() {
     reset_csv(&lfs, &file); // Reset CSV file to prepare for next test -> IF YOU ARE INITIALIZING A NEW CSV YOU NEED TO COMMENT THIS OUT THE FIRST TIME
     //printf("\n=== ROCKET UDP CLIENT ===\n");
     write_to_CSV("=== ROCKET UDP CLIENT ===\n", &lfs, &file);
+
+    init();
 
     if (!wifi_init_and_connect(&lfs, &file)) {
         //printf("Initial WiFi connect failed\n");
