@@ -63,7 +63,7 @@ static lfs_t lfs;
 struct lfs_config *config;
 tonegenerator_t generator;
 
-rocket_state_t current_state = IDLE;
+rocket_state_t current_state;
 
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
