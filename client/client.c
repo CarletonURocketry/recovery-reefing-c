@@ -26,7 +26,8 @@
 #define WIFI_ASSOC_TIMEOUT_MS 30000
 
 #define HELLO_RETRY_INTERVAL_MS 1000
-#define HELLO_MAX_RETRIES       15  //amount of hellos before retry - min 7
+#define HELLO_MAX_RETRIES       15  
+//amount of hellos before retry - min 7
 
 #define PACKET_TIMEOUT_MS 5000
 #define FS_SIZE (256 * 1024)
