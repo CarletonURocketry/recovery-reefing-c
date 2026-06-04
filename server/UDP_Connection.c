@@ -58,6 +58,8 @@ note_t VICTORY[] = {
 
 
 
+
+
 // extern struct lfs_config pico_cfg;
 static lfs_t lfs;
 struct lfs_config *config;
@@ -114,6 +116,7 @@ void init(){
     stdio_init_all();
 
     init_altimeter_pin();
+    init_leds();
 }
 
 // Send a state packet to the registered client
@@ -234,6 +237,7 @@ int main() {
 
     init();
 
+
     tone_gen();
 
     // Initialize WiFi
@@ -321,34 +325,33 @@ int main() {
                 state_change_time = now;
             }
         }
+        else if(!client_connected){
+            current_state == IDLE;
+        }
 
         if (!gpio_get(ALTIMETERPIN)){
             
-            int debug_timer = 10000; // <<<************************************************************************************************* <-- THIS VALUE
-
-            while(debug_timer > 0){debug_timer = debug_timer-1;}
+            sleep_ms(70);
             
-            if (!gpio_get(ALTIMETERPIN)){
+            if (gpio_get(ALTIMETERPIN)){
                 current_state = BLOW_UP;
                 sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
                 write_to_CSV(text, &lfs, &file);
                 state_change_time = now;
-
-                
-                while(true){
-                    if(client_connected){
-                    send_state_packet(current_state, &lfs, &file);
-                    gpio_put(LED1, 1);
-                    }
-                cyw43_arch_poll();
                 }
             }
-        }
+        
 
         // Send 2 packets per second once client is registered
         if (now - last_send_time >= 500) {
             send_state_packet(current_state, &lfs, &file);
             last_send_time = now;
+
+        }
+         if(current_state == CONNECTED){
+            gpio_put(11, 1);
+        }else{
+            gpio_put(11, 0);
         }
             //current_state = (rocket_state_t)((current_state + 1) % 3);
             //printf("\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
