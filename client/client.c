@@ -26,7 +26,7 @@
 #define WIFI_ASSOC_TIMEOUT_MS 30000
 
 #define HELLO_RETRY_INTERVAL_MS 1000
-#define HELLO_MAX_RETRIES       15  
+#define HELLO_MAX_RETRIES       8 
 //amount of hellos before retry - min 7
 
 #define PACKET_TIMEOUT_MS 5000
@@ -81,7 +81,7 @@ void init(){
 
 // Exactly what the function says
 void blow_up(){
-    gpio_put(11, 1);
+    gpio_put(EMATCHPIN, 1);
 }
 
 // memory function for testing purposes
@@ -145,12 +145,11 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     switch (current_state) {
         case IDLE:
             // printf("  -> Nothing deployed\n");
-            write_to_CSV("  -> Nothing deployed\n", s->recv_lfs, s->recv_file);
-            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+
             break;
         case CONNECTED:
             // printf("  -> Main parachute deployed!\n");
-            write_to_CSV("  -> Main parachute deployed\n", s->recv_lfs, s->recv_file);
+
             
             break;
         case BLOW_UP:
@@ -158,10 +157,7 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
             while(true){
                 blow_up();
             }
-            
-            // printf("  -> CUT REEFING LINE!!!\n");
-            write_to_CSV("  -> CUT REEFING LINE!!!\n", s->recv_lfs, s->recv_file);
-            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+
             break;
     }
 }
@@ -289,13 +285,12 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
             last_hello_time = now;
         }
         cyw43_arch_poll();
-        sleep_ms(100);
+        sleep_ms(10);
     }
 
     if (!server_acked) {
         // printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
         snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
-        print_memory_usage();
         write_to_CSV(text, lfs, file);        
     }
 }
@@ -346,18 +341,14 @@ int main() {
     do_hello_handshake(&lfs, &file);
 
     last_packet_time_ms = to_ms_since_boot(get_absolute_time());
-    print_memory_usage(); //just added for testing 
+     //just added for testing 
 
     // Main loop
     while (true) {
         cyw43_arch_poll(); // tends to wifi card NEVER REMOVE
         uint32_t now = to_ms_since_boot(get_absolute_time());
 
-        // config = pico_lfs_init(PICO_FLASH_SIZE_BYTES - FS_SIZE, FS_SIZE);
-        //if(!config){
-            //printf("Out of memory\n");
-          //  write_to_CSV("Out of memory\n", &lfs, &file);
-        //}
+
         //when blow up is initialized this state should just be continuously sent 
         if (current_state == BLOW_UP){
             while (true){
