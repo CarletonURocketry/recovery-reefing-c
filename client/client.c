@@ -7,8 +7,9 @@
 #include "pico_lfs.h"
 #include "lwip/udp.h"
 #include "lwip/netif.h"
-#include "lwip/ip4_addr.h"
+#include "lwip/ip4_addr.h" 
 #include "lwip/dhcp.h"
+#include "pwm-tone.h"
 #include "hardware/gpio.h"
 
 //connection stuff
@@ -29,10 +30,40 @@
 #define HELLO_MAX_RETRIES       15  
 //amount of hellos before retry - min 7
 
+//LEDs
+#define LED1 11
+#define LED2 12
+#define LED3 13
+
+//buzzer pin TBD
+#define PIEZO_PIN   27
+
 #define PACKET_TIMEOUT_MS 5000
 #define FS_SIZE (256 * 1024)
 
 #define EMATCHPIN 10
+
+note_t VICTORY[] = {
+    {NOTE_G4, 8},
+    {NOTE_G4, 16},
+    {NOTE_G4, 16},
+    {NOTE_D5, 4},
+    {REST, 8},
+    {MELODY_END, 0},
+};
+
+note_t CONFIRM[] = {
+    {NOTE_C7, 128},
+    {REST, 128},
+    {NOTE_C7, 128},
+    {REST, 128},
+    {NOTE_C7, 128},
+    {REST, 128},
+    {NOTE_C7, 128},
+    {REST, 128},
+    {REST, 8},
+    {MELODY_END, 0},
+};
 
 volatile uint32_t last_packet_time_ms = 0;
 static struct lfs_config * config;
@@ -50,6 +81,13 @@ rocket_state_t current_state;
 bool server_acked = false;
 
 struct udp_pcb *udp_client = NULL; 
+
+tonegenerator_t generator;
+
+void tone_gen(){
+    tone_init(&generator, PIEZO_PIN);
+    melody(&generator, CONFIRM, 0);
+}
 
 struct csv_struct {
     lfs_t *recv_lfs;
@@ -303,7 +341,6 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
 int main() {
     //initialize pico
     stdio_init_all();
-
     
     //declaration of FS + initialize file
     lfs_t lfs;
@@ -323,13 +360,15 @@ int main() {
         printf("error, did not work\n");
         lfs_format(&lfs, config);
         lfs_mount(&lfs, config);
-    }//this line
+    }//this line 
     
     reset_csv(&lfs, &file); // Reset CSV file to prepare for next test -> IF YOU ARE INITIALIZING A NEW CSV YOU NEED TO COMMENT THIS OUT THE FIRST TIME
     //printf("\n=== ROCKET UDP CLIENT ===\n");
     write_to_CSV("=== ROCKET UDP CLIENT ===\n", &lfs, &file);
 
     init(); 
+
+    tone_gen();
 
     if (!wifi_init_and_connect(&lfs, &file)) {
         //printf("Initial WiFi connect failed\n");

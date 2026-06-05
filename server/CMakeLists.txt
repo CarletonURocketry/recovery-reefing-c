@@ -40,7 +40,7 @@ add_executable(UDP_Connection UDP_Connection.c )
 # Include pico-lfs library
 add_subdirectory(pico-lfs)
 
-#include PWM Tone library
+# Include PWM Tone library
 add_subdirectory(RP2040-PWM-Tone)
 
 pico_set_program_name(UDP_Connection "UDP_Connection")

@@ -56,8 +56,6 @@ note_t VICTORY[] = {
     {MELODY_END, 0},
 };
 
-
-
 // extern struct lfs_config pico_cfg;
 static lfs_t lfs;
 struct lfs_config *config;
