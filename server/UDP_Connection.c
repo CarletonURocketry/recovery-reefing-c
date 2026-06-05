@@ -56,7 +56,12 @@ note_t VICTORY[] = {
     {MELODY_END, 0},
 };
 
-
+note_t COIN[] = {
+    {NOTE_C6, 16},
+    {NOTE_C7, 4},
+    {REST, 8},
+    {MELODY_END, 0},
+};
 
 
 
@@ -70,6 +75,11 @@ rocket_state_t current_state;
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
     melody(&generator, VICTORY, 0);
+}
+
+void tone_gen_connected(){
+    tone_init(&generator, PIEZO_PIN);
+    melody(&generator, COIN, 0);
 }
 
 struct csv_struct {
@@ -317,7 +327,7 @@ int main() {
 
         if(client_connected){
             if(!buzzer_played){
-                tone_gen();
+                tone_gen_connected();
                 buzzer_played = true;
                 current_state = CONNECTED;
                 sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
