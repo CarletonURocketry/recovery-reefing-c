@@ -56,8 +56,6 @@ note_t VICTORY[] = {
     {MELODY_END, 0},
 };
 
-<<<<<<< HEAD
-=======
 note_t COIN[] = {
     {NOTE_C6, 16},
     {NOTE_C7, 4},
@@ -66,8 +64,6 @@ note_t COIN[] = {
 };
 
 
-
->>>>>>> 91bc5446d72318c15c2d42c792c9b06d75b0284c
 // extern struct lfs_config pico_cfg;
 static lfs_t lfs;
 struct lfs_config *config;
@@ -136,16 +132,16 @@ void init(){
 void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
     char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
     if (!client_connected) {
-        // printf("No client connected yet\n");
-        write_to_CSV("No client connected yet\n", lfs, file);
-        // print_memory_usage();
+        printf("No client connected yet\n");
+        // write_to_CSV("No client connected yet\n", lfs, file);
+        print_memory_usage();
         return;
     }
 
     //creat packet snprintf prevents buffer overflow. Could switch to binary packets if really need to
     char packet[32];
     snprintf(packet, sizeof(packet), "STATE:%d", state);
-    write_to_CSV(packet, lfs, file);
+    //write_to_CSV(packet, lfs, file);
 
     // Send via UDP
     // LwIP uses pbufs for packet data, stands for packet buffers. Think of them as an envelope for our data
@@ -156,7 +152,7 @@ void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
         // Sends the packet p to from UDP socket udp_sender, to the client IP and port
         err_t err = udp_sendto(udp_sender, p, &client_ip, UDP_PORT);
         if (err == ERR_OK) {
-            // printf("Sent: %s\n", packet);
+           // printf("Sent: %s\n", packet);
             snprintf(text, sizeof(text),"Sent: %s\n", packet);
             write_to_CSV(text, lfs, file);
         } else {
@@ -189,9 +185,9 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
-    // printf("Received from client: %s\n", buffer);
-    snprintf(text, sizeof(text), "Received from client: %s\n", buffer);
-    write_to_CSV(text, lfs, file);
+    printf("Received from client: %s\n", buffer);
+    //snprintf(text, sizeof(text), "Received from client: %s\n", buffer);
+    //write_to_CSV(text, lfs, file);
 
      // If the client IP is not saved yet, save it
     if (!client_connected) {
@@ -249,10 +245,8 @@ int main() {
     write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
 
     init();
-
-
     tone_gen();
-
+    
     // Initialize WiFi
     if (cyw43_arch_init()) {
         //printf("WiFi init failed\n");
@@ -334,7 +328,7 @@ int main() {
                 buzzer_played = true;
                 current_state = CONNECTED;
                 sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
-                write_to_CSV(text, &lfs, &file);
+               // write_to_CSV(text, &lfs, &file);
                 state_change_time = now;
             }
         }
@@ -349,7 +343,7 @@ int main() {
             if (gpio_get(ALTIMETERPIN)){
                 current_state = BLOW_UP;
                 sprintf(text, "\n>>> STATE CHANGED TO: %d <<<\n\n", current_state);
-                write_to_CSV(text, &lfs, &file);
+                //write_to_CSV(text, &lfs, &file);
                 state_change_time = now;
                 }
             }

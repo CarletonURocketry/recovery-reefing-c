@@ -164,13 +164,15 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 
     // printf("Received: %s\n", buffer);
     snprintf(text, sizeof(text), "Received: %s\n", buffer);
-    write_to_CSV(text, s->recv_lfs, s->recv_file);
-    
+    //write_to_CSV(text, s->recv_lfs, s->recv_file);
+    //lfs_file_open(s->recv_lfs, s->recv_file, "client.csv", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND); 
+   // lfs_file_write(s->recv_lfs, s->recv_file, text, strlen(text)); // Write to system
+   // lfs_file_close(s->recv_lfs, s->recv_file);
     if (strncmp(buffer, "ACK", 3) == 0) {
         if (!server_acked) {
             server_acked = true;
-            // printf("Server acknowledged -- link established!\n");
-            write_to_CSV("Server acknowledged -- link established!\n", s->recv_lfs, s->recv_file);
+            printf("Server acknowledged -- link established!\n");
+            //write_to_CSV("Server acknowledged -- link established!\n", s->recv_lfs, s->recv_file);
         }
         return;
     }
@@ -187,7 +189,6 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
             break;
         case CONNECTED:
             // printf("  -> Main parachute deployed!\n");
-
             
             break;
         case BLOW_UP:
@@ -202,8 +203,8 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 //checks if wifi card is working
 static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
     if (cyw43_arch_init()) {
-        // printf("WiFi init failed\n");
-        write_to_CSV("WiFi init failed\n", lfs, file);
+        printf("WiFi init failed\n");
+        //write_to_CSV("WiFi init failed\n", lfs, file);
         return false;
     }
     //wifi card into correct mode and type
@@ -224,7 +225,7 @@ static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
         if (link_status < 0) {
             // printf("WiFi error: %d", link_status);
             snprintf(text, sizeof(text), "WiFi error: %d", link_status);
-            write_to_CSV(text, lfs, file);
+            //write_to_CSV(text, lfs, file);
 
             if      (link_status == CYW43_LINK_BADAUTH) write_to_CSV(" (bad password)\n", lfs, file); //printf(" (bad password)\n"); // write_to_CSV(" (bad password)\n", &lfs, &file);
             else if (link_status == CYW43_LINK_NONET)   write_to_CSV(" (AP not found)\n", lfs, file); //printf(" (AP not found)\n"); // write_to_CSV(" (AP not found)\n", &lfs, &file);
@@ -235,13 +236,13 @@ static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
     }
 
     if (link_status != CYW43_LINK_JOIN && link_status != CYW43_LINK_UP) {
-        // printf("WiFi association timed out\n");
-        write_to_CSV("WiFi association timed out\n", lfs, file);
+        printf("WiFi association timed out\n");
+        //write_to_CSV("WiFi association timed out\n", lfs, file);
         return false;
     }
 
-    // printf("Associated with AP!\n");
-    write_to_CSV("Associated with AP!\n", lfs, file);
+    printf("Associated with AP!\n");
+    //write_to_CSV("Associated with AP!\n", lfs, file);
     //network setups
     struct netif *sta_if = &cyw43_state.netif[CYW43_ITF_STA];
     dhcp_stop(sta_if);
@@ -251,10 +252,10 @@ static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
     ip4addr_aton(CLIENT_GW, &gw);
     netif_set_addr(sta_if, &ip, &nm, &gw);
     netif_set_up(sta_if);
-    // printf("Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
+    printf("Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
     // char text[32];
     snprintf(text, sizeof(text), "Static IP set: %s\n", ip4addr_ntoa(netif_ip4_addr(sta_if)));
-    write_to_CSV(text, lfs, file);
+    //write_to_CSV(text, lfs, file);
 
     return true;
 }
@@ -268,16 +269,16 @@ static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
 
     udp_client = udp_new();
     if (udp_client == NULL) {
-        // printf("Failed to create UDP socket\n");
-        write_to_CSV("Failed to create UDP socket\n", lfs, file);
+        printf("Failed to create UDP socket\n");
+        // write_to_CSV("Failed to create UDP socket\n", lfs, file);
         return false;
     }
 
     err_t err = udp_bind(udp_client, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
-        // printf("UDP bind failed: %d\n", err);
-        snprintf(text, sizeof(text),"UDP bind failed: %d\n", err);
-        write_to_CSV(text, lfs, file);
+        printf("UDP bind failed: %d\n", err);
+        //snprintf(text, sizeof(text),"UDP bind failed: %d\n", err);
+        //write_to_CSV(text, lfs, file);
         udp_remove(udp_client);
         udp_client = NULL;
         return false;
@@ -288,9 +289,9 @@ static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
     csv.recv_file = file;
 
     udp_recv(udp_client, udp_recv_callback, &csv);
-    // printf("UDP socket ready on port %d\n", UDP_PORT);
-    snprintf(text, sizeof(text), "UDP socket ready on port %d\n", UDP_PORT);
-    write_to_CSV(text, lfs, file);
+    printf("UDP socket ready on port %d\n", UDP_PORT);
+    //snprintf(text, sizeof(text), "UDP socket ready on port %d\n", UDP_PORT);
+    //write_to_CSV(text, lfs, file);
     return true;
 }
 //recconection/ initial connection
@@ -303,9 +304,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     uint32_t last_hello_time = 0;
     int attempts = 0;
 
-    // printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
-    snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
-    write_to_CSV(text, lfs, file);
+    printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
+    //snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
+    //write_to_CSV(text, lfs, file);
     sleep_ms(10);
     //hello attempts
     while (!server_acked && attempts < HELLO_MAX_RETRIES) {
@@ -316,9 +317,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
                 memcpy(p->payload, hello, strlen(hello));
                 udp_sendto(udp_client, p, &server_addr, UDP_PORT);
                 pbuf_free(p);
-                // printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                write_to_CSV(text, lfs, file);
+                printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                //snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                //write_to_CSV(text, lfs, file);
             }
             last_hello_time = now;
         }
@@ -327,7 +328,7 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     }
 
     if (!server_acked) {
-        // printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+        printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
         snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
         write_to_CSV(text, lfs, file);        
     }
@@ -397,9 +398,9 @@ int main() {
         //if a certian amount of time has passed between packets received system assumes disconnection 
         //resets everything and do_hello_handshake is redone
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
-            //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            write_to_CSV(text, &lfs, &file);
+            printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            //snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            //write_to_CSV(text, &lfs, &file);
 
             cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
             sleep_ms(500);
@@ -407,16 +408,16 @@ int main() {
             sleep_ms(500);
 
             if (!wifi_init_and_connect(&lfs, &file)) {
-                //printf("Reconnect failed, will retry next watchdog tick\n");
-                write_to_CSV("Reconnect failed, will retry next watchdog tick\n", &lfs, &file);
+                printf("Reconnect failed, will retry next watchdog tick\n");
+                //write_to_CSV("Reconnect failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
             }
 
             if (!setup_udp(&lfs, &file)) {
-                //printf("UDP setup failed, will retry next watchdog tick\n");
-                write_to_CSV("UDP setup failed, will retry next watchdog tick\n", &lfs, &file);
+                printf("UDP setup failed, will retry next watchdog tick\n");
+                //write_to_CSV("UDP setup failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
@@ -424,8 +425,8 @@ int main() {
 
             do_hello_handshake(&lfs, &file);
 
-            //printf("Fully reconnected, resuming...\n");
-            write_to_CSV("Fully reconnected, resuming...\n", &lfs, &file);
+            printf("Fully reconnected, resuming...\n");
+            //write_to_CSV("Fully reconnected, resuming...\n", &lfs, &file);
             last_packet_time_ms = to_ms_since_boot(get_absolute_time());
         }
 
