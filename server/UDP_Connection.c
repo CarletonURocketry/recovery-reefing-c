@@ -56,8 +56,6 @@ note_t VICTORY[] = {
     {MELODY_END, 0},
 };
 
-<<<<<<< HEAD
-=======
 note_t COIN[] = {
     {NOTE_C6, 16},
     {NOTE_C7, 4},
@@ -65,9 +63,6 @@ note_t COIN[] = {
     {MELODY_END, 0},
 };
 
-
-
->>>>>>> 91bc5446d72318c15c2d42c792c9b06d75b0284c
 // extern struct lfs_config pico_cfg;
 static lfs_t lfs;
 struct lfs_config *config;
