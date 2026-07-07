@@ -131,8 +131,8 @@ void init(){
 void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
     char text[32]; // I'm making this to make sure my stuff stays out of your way, but theres a good chance if we just put packet here we could use that instead
     if (!client_connected) {
-        // printf("No client connected yet\n");
-        write_to_CSV("No client connected yet\n", lfs, file);
+        printf("No client connected yet\n");
+        // write_to_CSV("No client connected yet\n", lfs, file);
         // print_memory_usage();
         return;
     }
@@ -151,13 +151,13 @@ void send_state_packet(rocket_state_t state, lfs_t *lfs, lfs_file_t *file) {
         // Sends the packet p to from UDP socket udp_sender, to the client IP and port
         err_t err = udp_sendto(udp_sender, p, &client_ip, UDP_PORT);
         if (err == ERR_OK) {
-            // printf("Sent: %s\n", packet);
-            snprintf(text, sizeof(text),"Sent: %s\n", packet);
-            write_to_CSV(text, lfs, file);
+            printf("Sent: %s\n", packet);
+            // snprintf(text, sizeof(text),"Sent: %s\n", packet);
+            // write_to_CSV(text, lfs, file);
         } else {
-            // printf("Send failed: %d\n", err);
-            snprintf(text, sizeof(text), "Send failed: %s\n", err);
-            write_to_CSV(text, lfs, file);
+            printf("Send failed: %d\n", err);
+            // snprintf(text, sizeof(text), "Send failed: %s\n", err);
+            // write_to_CSV(text, lfs, file);
         }
         pbuf_free(p);
     }
@@ -184,17 +184,17 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
-    // printf("Received from client: %s\n", buffer);
-    snprintf(text, sizeof(text), "Received from client: %s\n", buffer);
-    write_to_CSV(text, lfs, file);
+    printf("Received from client: %s\n", buffer);
+    // snprintf(text, sizeof(text), "Received from client: %s\n", buffer);
+    // write_to_CSV(text, lfs, file);
 
      // If the client IP is not saved yet, save it
     if (!client_connected) {
         ip_addr_copy(client_ip, *addr);
         client_connected = true;
-        // printf("Client registered at: %s\n", ipaddr_ntoa(&client_ip));
-        snprintf(text, sizeof(text), "Client registered at: %s\n", ipaddr_ntoa(&client_ip));
-        write_to_CSV(text, lfs, file);
+        printf("Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        // snprintf(text, sizeof(text), "Client registered at: %s\n", ipaddr_ntoa(&client_ip));
+        // write_to_CSV(text, lfs, file);
     }
 
     // ACK so the client knows the server is alive and stops retrying HELLO
@@ -240,11 +240,10 @@ int main() {
     // tone_init(&generator, PIEZO_PIN);
 
     reset_csv(&lfs, &file); 
-    //printf("\n--UDP SERVER--\n"); 
-    write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
+    printf("\n--UDP SERVER--\n"); 
+    // write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
 
     init();
-
 
     tone_gen();
 
@@ -263,7 +262,6 @@ int main() {
     sleep_ms(500);
     tone_gen();
 
-
     // Configure the AP interface IP directly from cyw43_state.
     // The loopback interface (127.0.0.1) is ALWAYS the first entry in
     // netif_list and ALWAYS has netif_is_up() == true. Any search that
@@ -280,24 +278,24 @@ int main() {
     ip4addr_aton(AP_GW, &gw);
     netif_set_addr(ap_if, &ipaddr, &nm, &gw);
 
-    //printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
-    write_to_CSV(("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr)), &lfs, &file);
-    //printf("AP started: %s\n", WIFI_SSID);
-    write_to_CSV(("AP started: %s\n", WIFI_SSID), &lfs, &file);
+    printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
+    // write_to_CSV(("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr)), &lfs, &file);
+    printf("AP started: %s\n", WIFI_SSID);
+    // write_to_CSV(("AP started: %s\n", WIFI_SSID), &lfs, &file);
 
     // Create UDP socket and bind AFTER the AP interface has its IP set
     udp_sender = udp_new();
     if (udp_sender == NULL) {
-        //printf("Failed to create UDP socket\n");
-        write_to_CSV("Failed to create UDP socket\n", &lfs, &file);
+        printf("Failed to create UDP socket\n");
+        // write_to_CSV("Failed to create UDP socket\n", &lfs, &file);
         return -1;
     }
 
     err_t err = udp_bind(udp_sender, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
-        //printf("UDP bind failed: %d\n", err);
-        sprintf(text, "UDP bind failed: %d\n", err);
-        write_to_CSV(text, &lfs, &file);
+        printf("UDP bind failed: %d\n", err);
+        // sprintf(text, "UDP bind failed: %d\n", err);
+        // write_to_CSV(text, &lfs, &file);
         return -1;
     }
 
@@ -309,11 +307,11 @@ int main() {
     // When a packet arrives on udp_sender, call the function udp_recv_callback (NULL means no user arg)
     udp_recv(udp_sender, udp_recv_callback, &csv);
 
-    //printf("UDP server ready on port %d\n", UDP_PORT);
-    sprintf(text, "UDP server ready on port %d\n", UDP_PORT);
-    write_to_CSV(text, &lfs, &file);
-    //printf("Waiting for client hello...\n\n");
-    write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
+    printf("UDP server ready on port %d\n", UDP_PORT);
+    // sprintf(text, "UDP server ready on port %d\n", UDP_PORT);
+    // write_to_CSV(text, &lfs, &file);
+    printf("Waiting for client hello...\n\n");
+    // write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
 
     // Main loop - send different states
     
@@ -351,7 +349,7 @@ int main() {
         
 
         // Send 2 packets per second once client is registered
-        if (now - last_send_time >= 500) {
+        if (now - last_send_time >= 100) {
             send_state_packet(current_state, &lfs, &file);
             last_send_time = now;
 
