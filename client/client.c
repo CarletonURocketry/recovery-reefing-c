@@ -26,7 +26,7 @@
 #define USB_WAIT_MS           3000
 #define WIFI_ASSOC_TIMEOUT_MS 30000
 
-#define HELLO_RETRY_INTERVAL_MS 1000
+#define HELLO_RETRY_INTERVAL_MS 800 //changes the time between hellos
 #define HELLO_MAX_RETRIES       8 
 //amount of hellos before retry - min 7
 
@@ -38,7 +38,7 @@
 //buzzer pin TBD
 #define PIEZO_PIN   27
 
-#define PACKET_TIMEOUT_MS 5000
+#define PACKET_TIMEOUT_MS 8000 // amount of time without a packet before reset
 #define FS_SIZE (256 * 1024)
 
 #define EMATCHPIN 10
@@ -162,15 +162,15 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
-    // printf("Received: %s\n", buffer);
-    snprintf(text, sizeof(text), "Received: %s\n", buffer);
-    write_to_CSV(text, s->recv_lfs, s->recv_file);
+    printf("Received: %s\n", buffer);
+    //snprintf(text, sizeof(text), "Received: %s\n", buffer);
+    //write_to_CSV(text, s->recv_lfs, s->recv_file);
     
     if (strncmp(buffer, "ACK", 3) == 0) {
         if (!server_acked) {
             server_acked = true;
-            // printf("Server acknowledged -- link established!\n");
-            write_to_CSV("Server acknowledged -- link established!\n", s->recv_lfs, s->recv_file);
+            printf("Server acknowledged -- link established!\n");
+            //write_to_CSV("Server acknowledged -- link established!\n", s->recv_lfs, s->recv_file);
         }
         return;
     }
@@ -235,8 +235,8 @@ static bool wifi_init_and_connect(lfs_t *lfs, lfs_file_t *file) {
     }
 
     if (link_status != CYW43_LINK_JOIN && link_status != CYW43_LINK_UP) {
-        // printf("WiFi association timed out\n");
-        write_to_CSV("WiFi association timed out\n", lfs, file);
+        printf("WiFi association timed out\n");
+        //write_to_CSV("WiFi association timed out\n", lfs, file);
         return false;
     }
 
@@ -268,8 +268,8 @@ static bool setup_udp(lfs_t *lfs, lfs_file_t *file) {
 
     udp_client = udp_new();
     if (udp_client == NULL) {
-        // printf("Failed to create UDP socket\n");
-        write_to_CSV("Failed to create UDP socket\n", lfs, file);
+        printf("Failed to create UDP socket\n");
+        //write_to_CSV("Failed to create UDP socket\n", lfs, file);
         return false;
     }
 
@@ -303,9 +303,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     uint32_t last_hello_time = 0;
     int attempts = 0;
 
-    // printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
-    snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
-    write_to_CSV(text, lfs, file);
+    printf("Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
+    //snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
+    //write_to_CSV(text, lfs, file);
     sleep_ms(10);
     //hello attempts
     while (!server_acked && attempts < HELLO_MAX_RETRIES) {
@@ -316,9 +316,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
                 memcpy(p->payload, hello, strlen(hello));
                 udp_sendto(udp_client, p, &server_addr, UDP_PORT);
                 pbuf_free(p);
-                // printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                write_to_CSV(text, lfs, file);
+                printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                //snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                //write_to_CSV(text, lfs, file);
             }
             last_hello_time = now;
         }
@@ -327,9 +327,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     }
 
     if (!server_acked) {
-        // printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
-        snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
-        write_to_CSV(text, lfs, file);        
+        printf("Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+        //snprintf(text, sizeof(text),"Server did not respond after %d attempts -- continuing anyway\n", HELLO_MAX_RETRIES);
+        //write_to_CSV(text, lfs, file);        
     }
 }
 
@@ -397,26 +397,26 @@ int main() {
         //if a certian amount of time has passed between packets received system assumes disconnection 
         //resets everything and do_hello_handshake is redone
         if (now - last_packet_time_ms >= PACKET_TIMEOUT_MS) {
-            //printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
-            write_to_CSV(text, &lfs, &file);
+            printf("\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            //snprintf(text, sizeof(text), "\n[WATCHDOG] No packet for %d ms -- full WiFi reset...\n", PACKET_TIMEOUT_MS);
+            //write_to_CSV(text, &lfs, &file);
 
             cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
-            sleep_ms(500);
+            sleep_ms(100);
             cyw43_arch_deinit();
-            sleep_ms(500);
+            sleep_ms(100);
 
             if (!wifi_init_and_connect(&lfs, &file)) {
-                //printf("Reconnect failed, will retry next watchdog tick\n");
-                write_to_CSV("Reconnect failed, will retry next watchdog tick\n", &lfs, &file);
+                printf("Reconnect failed, will retry next watchdog tick\n");
+                //write_to_CSV("Reconnect failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
             }
 
             if (!setup_udp(&lfs, &file)) {
-                //printf("UDP setup failed, will retry next watchdog tick\n");
-                write_to_CSV("UDP setup failed, will retry next watchdog tick\n", &lfs, &file);
+                printf("UDP setup failed, will retry next watchdog tick\n");
+                //write_to_CSV("UDP setup failed, will retry next watchdog tick\n", &lfs, &file);
                 last_packet_time_ms = to_ms_since_boot(get_absolute_time());
                 sleep_ms(10);
                 continue;
@@ -424,8 +424,8 @@ int main() {
 
             do_hello_handshake(&lfs, &file);
 
-            //printf("Fully reconnected, resuming...\n");
-            write_to_CSV("Fully reconnected, resuming...\n", &lfs, &file);
+            printf("Fully reconnected, resuming...\n");
+            //write_to_CSV("Fully reconnected, resuming...\n", &lfs, &file);
             last_packet_time_ms = to_ms_since_boot(get_absolute_time());
         }
 
