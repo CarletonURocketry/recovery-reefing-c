@@ -349,7 +349,7 @@ int main() {
         
 
         // Send 2 packets per second once client is registered
-        if (now - last_send_time >= 500) {
+        if (now - last_send_time >= 100) {
             send_state_packet(current_state, &lfs, &file);
             last_send_time = now;
 
