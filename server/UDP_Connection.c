@@ -240,8 +240,8 @@ int main() {
     // tone_init(&generator, PIEZO_PIN);
 
     reset_csv(&lfs, &file); 
-    printf("\n--UDP SERVER--\n"); 
-    // write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
+    //printf("\n--UDP SERVER--\n"); 
+    write_to_CSV("===ROCKET UDP SERVER===\n", &lfs, &file);
 
     init();
 
@@ -278,24 +278,24 @@ int main() {
     ip4addr_aton(AP_GW, &gw);
     netif_set_addr(ap_if, &ipaddr, &nm, &gw);
 
-    printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
-    // write_to_CSV(("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr)), &lfs, &file);
-    printf("AP started: %s\n", WIFI_SSID);
-    // write_to_CSV(("AP started: %s\n", WIFI_SSID), &lfs, &file);
+    // printf("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr));
+    write_to_CSV(("AP IP configured: %s\n", ip4addr_ntoa(&ipaddr)), &lfs, &file);
+    // printf("AP started: %s\n", WIFI_SSID);
+    write_to_CSV(("AP started: %s\n", WIFI_SSID), &lfs, &file);
 
     // Create UDP socket and bind AFTER the AP interface has its IP set
     udp_sender = udp_new();
     if (udp_sender == NULL) {
-        printf("Failed to create UDP socket\n");
-        // write_to_CSV("Failed to create UDP socket\n", &lfs, &file);
+        // printf("Failed to create UDP socket\n");
+        write_to_CSV("Failed to create UDP socket\n", &lfs, &file);
         return -1;
     }
 
     err_t err = udp_bind(udp_sender, IP_ADDR_ANY, UDP_PORT);
     if (err != ERR_OK) {
-        printf("UDP bind failed: %d\n", err);
-        // sprintf(text, "UDP bind failed: %d\n", err);
-        // write_to_CSV(text, &lfs, &file);
+        // printf("UDP bind failed: %d\n", err);
+        sprintf(text, "UDP bind failed: %d\n", err);
+        write_to_CSV(text, &lfs, &file);
         return -1;
     }
 
@@ -307,11 +307,11 @@ int main() {
     // When a packet arrives on udp_sender, call the function udp_recv_callback (NULL means no user arg)
     udp_recv(udp_sender, udp_recv_callback, &csv);
 
-    printf("UDP server ready on port %d\n", UDP_PORT);
-    // sprintf(text, "UDP server ready on port %d\n", UDP_PORT);
-    // write_to_CSV(text, &lfs, &file);
-    printf("Waiting for client hello...\n\n");
-    // write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
+    // printf("UDP server ready on port %d\n", UDP_PORT);
+    sprintf(text, "UDP server ready on port %d\n", UDP_PORT);
+    write_to_CSV(text, &lfs, &file);
+    // printf("Waiting for client hello...\n\n");
+    write_to_CSV("Waiting for client hello...\n\n", &lfs, &file);
 
     // Main loop - send different states
     

@@ -158,13 +158,13 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     char buffer[128];
     char text[32];
     u16_t copy_len = p->len < sizeof(buffer) - 1 ? p->len : sizeof(buffer) - 1;
-    memcpy(buffer, p->payload, copy_len);
+    memcpy(buffer, p->payload, copy_len); 
     buffer[copy_len] = '\0';
     pbuf_free(p);
 
-    // printf("Received: %s\n", buffer);
-    snprintf(text, sizeof(text), "Received: %s\n", buffer);
-    write_to_CSV(text, s->recv_lfs, s->recv_file);
+    printf("Received: %s\n", buffer);
+    // snprintf(text, sizeof(text), "Received: %s\n", buffer);
+    // write_to_CSV(text, s->recv_lfs, s->recv_file);
     
     if (strncmp(buffer, "ACK", 3) == 0) {
         if (!server_acked) {
@@ -182,11 +182,11 @@ void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     //state machine
     switch (current_state) {
         case IDLE:
-            // printf("  -> Nothing deployed\n");
+            printf("  -> Nothing deployed\n");
 
             break;
         case CONNECTED:
-            // printf("  -> Main parachute deployed!\n");
+            printf("  -> Main parachute deployed!\n");
 
             
             break;
@@ -316,9 +316,9 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
                 memcpy(p->payload, hello, strlen(hello));
                 udp_sendto(udp_client, p, &server_addr, UDP_PORT);
                 pbuf_free(p);
-                // printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
-                write_to_CSV(text, lfs, file);
+                printf("HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES);
+                //snprintf(text, sizeof(text), "HELLO attempt %d/%d\n", ++attempts, HELLO_MAX_RETRIES); ////////////////CHECK LATER
+                //write_to_CSV(text, lfs, file);                                                        ////////////////CHECK LATER
             }
             last_hello_time = now;
         }
