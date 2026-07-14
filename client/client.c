@@ -43,6 +43,41 @@
 
 #define EMATCHPIN 10
 
+
+
+volatile uint32_t last_packet_time_ms = 0;
+static struct lfs_config * config;
+static lfs_t lfs;
+//struct mallinfo m = mallinfo();
+
+//states
+typedef enum {
+    IDLE = 0,
+    CONNECTED = 1,
+    BLOW_UP = 2
+} rocket_state_t;
+
+rocket_state_t current_state;
+bool server_acked = false;
+
+struct udp_pcb *udp_client = NULL; 
+
+
+
+struct csv_struct {
+    lfs_t *recv_lfs;
+    lfs_file_t *recv_file;
+};
+
+void init_leds(){
+    gpio_init(11);
+    gpio_set_dir(11, GPIO_OUT);
+    gpio_init(12);
+    gpio_set_dir(12, GPIO_OUT);
+    gpio_init(13);
+    gpio_set_dir(13, GPIO_OUT);
+}
+
 note_t VICTORY[] = {
     {NOTE_G4, 8},
     {NOTE_G4, 16},
@@ -65,44 +100,12 @@ note_t CONFIRM[] = {
     {MELODY_END, 0},
 };
 
-volatile uint32_t last_packet_time_ms = 0;
-static struct lfs_config * config;
-static lfs_t lfs;
-//struct mallinfo m = mallinfo();
-
-//states
-typedef enum {
-    IDLE = 0,
-    CONNECTED = 1,
-    BLOW_UP = 2
-} rocket_state_t;
-
-rocket_state_t current_state;
-bool server_acked = false;
-
-struct udp_pcb *udp_client = NULL; 
-
 tonegenerator_t generator;
 
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
     melody(&generator, CONFIRM, 0);
 }
-
-struct csv_struct {
-    lfs_t *recv_lfs;
-    lfs_file_t *recv_file;
-};
-
-void init_leds(){
-    gpio_init(11);
-    gpio_set_dir(11, GPIO_OUT);
-    gpio_init(12);
-    gpio_set_dir(12, GPIO_OUT);
-    gpio_init(13);
-    gpio_set_dir(13, GPIO_OUT);
-}
-
 
 void init_ematch_pin(){
     gpio_init(EMATCHPIN);
