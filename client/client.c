@@ -100,11 +100,29 @@ note_t CONFIRM[] = {
     {MELODY_END, 0},
 };
 
+note_t ERROR[] = {
+    {NOTE_C6, 32},
+    {REST, 64},
+    {NOTE_C6, 32},
+    {REST, 64},
+    {NOTE_C4, 32},
+    {REST, 64},
+    {NOTE_C4, 32},
+    {REST, 64},
+    {REST, 8},
+    {MELODY_END, 0},
+};
+
 tonegenerator_t generator;
 
 void tone_gen(){
     tone_init(&generator, PIEZO_PIN);
     melody(&generator, CONFIRM, 0);
+}
+
+void tone_gen_sad(){
+    tone_init(&generator, PIEZO_PIN);
+    melody(&generator, ERROR, 0);
 }
 
 void init_ematch_pin(){
@@ -310,6 +328,8 @@ static void do_hello_handshake(lfs_t *lfs, lfs_file_t *file) {
     //snprintf(text, sizeof(text), "Sending HELLO to server (will retry every %d ms)...\n", HELLO_RETRY_INTERVAL_MS);
     //write_to_CSV(text, lfs, file);
     sleep_ms(10);
+
+    tone_gen_sad();
     //hello attempts
     while (!server_acked && attempts < HELLO_MAX_RETRIES) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
